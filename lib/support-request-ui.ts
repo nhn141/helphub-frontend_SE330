@@ -10,47 +10,47 @@ export const SUPPORT_REQUEST_STATUS_LABELS: Record<
   SupportRequestStatus,
   string
 > = {
-  PENDING: "Chờ duyệt",
-  APPROVED: "Đã duyệt",
-  REJECTED: "Từ chối",
-  IN_PROGRESS: "Đang hỗ trợ",
-  COMPLETED: "Hoàn thành",
-  CANCELLED: "Đã hủy",
+  PENDING: "Pending review",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  IN_PROGRESS: "In progress",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
 };
 
 export const VOLUNTEER_STATUS_LABELS: Record<
   VolunteerAssignmentStatus,
   string
 > = {
-  PENDING: "Chờ xác nhận",
-  ACCEPTED: "Đã chấp nhận",
-  REJECTED: "Bị từ chối",
-  CANCELLED: "Đã hủy",
-  COMPLETED: "Đã hoàn thành",
+  PENDING: "Pending approval",
+  ACCEPTED: "Accepted",
+  REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
+  COMPLETED: "Completed",
 };
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  REQUESTER: "Người cần hỗ trợ",
-  VOLUNTEER: "Tình nguyện viên",
-  ADMIN: "Quản trị viên",
-  COLLABORATOR: "Cộng tác viên",
+  REQUESTER: "Requester",
+  VOLUNTEER: "Volunteer",
+  ADMIN: "Administrator",
+  COLLABORATOR: "Collaborator",
 };
 
 export const SUPPORT_TYPE_LABELS: Record<SupportType, string> = {
-  MONEY: "Tiền",
-  GOODS: "Vật phẩm",
+  MONEY: "Money",
+  GOODS: "Goods",
 };
 
 export const SUPPORT_NEED_UNIT_LABELS: Record<SupportNeedUnit, string> = {
-  VND: "VNĐ",
+  VND: "VND",
   KG: "kg",
-  PIECE: "cái",
-  BOX: "thùng",
-  LITER: "lít",
-  PACKAGE: "gói",
-  SET: "bộ",
-  PERSON: "người",
-  OTHER: "đơn vị khác",
+  PIECE: "piece",
+  BOX: "box",
+  LITER: "liter",
+  PACKAGE: "package",
+  SET: "set",
+  PERSON: "person",
+  OTHER: "other",
 };
 
 export const SUPPORT_NEED_UNITS = Object.keys(
@@ -59,10 +59,10 @@ export const SUPPORT_NEED_UNITS = Object.keys(
 
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) {
-    return "Chưa cập nhật";
+    return "Not updated";
   }
 
-  return new Intl.DateTimeFormat("vi-VN", {
+  return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -73,14 +73,14 @@ export function formatQuantity(
   unit: SupportNeedUnit,
 ): string {
   if (unit === "VND") {
-    return new Intl.NumberFormat("vi-VN", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "VND",
       maximumFractionDigits: 0,
     }).format(value);
   }
 
-  return `${new Intl.NumberFormat("vi-VN", {
+  return `${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 2,
   }).format(value)} ${SUPPORT_NEED_UNIT_LABELS[unit]}`;
 }

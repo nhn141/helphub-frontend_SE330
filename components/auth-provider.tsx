@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!session) {
       router.replace("/");
-      throw new Error("Phiên đăng nhập đã hết hạn.");
+      throw new Error("Your session has expired.");
     }
 
     return session;
@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   if (loading) {
-    return <PortalLoading message="Đang xác thực tài khoản..." />;
+    return <PortalLoading message="Authenticating your account..." />;
   }
 
   if (!profile || !value) {
@@ -116,17 +116,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             <AlertIcon />
           </div>
           <h1 className="mt-4 text-xl font-semibold text-slate-950">
-            Không thể mở HelpHub
+            Unable to open HelpHub
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            {error ?? "Vui lòng đăng nhập lại để tiếp tục."}
+            {error ?? "Please sign in again to continue."}
           </p>
           <button
             type="button"
             onClick={logout}
             className="mt-5 h-10 rounded-lg bg-slate-950 px-5 text-sm font-semibold text-white hover:bg-slate-800"
           >
-            Về trang đăng nhập
+            Back to sign in
           </button>
         </div>
       </main>
@@ -180,5 +180,5 @@ function AlertIcon() {
 function getErrorMessage(error: unknown): string {
   return error instanceof Error
     ? error.message
-    : "Không thể xác thực tài khoản.";
+    : "Unable to authenticate your account.";
 }

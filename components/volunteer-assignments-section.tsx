@@ -78,10 +78,10 @@ export function VolunteerAssignmentsSection({
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <div>
         <h2 className="text-lg font-bold text-slate-950">
-          Tình nguyện viên đăng ký
+          Volunteer applications
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Xét duyệt người tham gia trực tiếp vào yêu cầu này.
+          Review volunteers who want to participate in this request.
         </p>
       </div>
 
@@ -108,9 +108,9 @@ export function VolunteerAssignmentsSection({
                   </div>
                   <div className="mt-2 space-y-1 text-sm text-slate-500">
                     <p>{assignment.volunteerEmail}</p>
-                    <p>{assignment.volunteerPhone || "Chưa có số điện thoại"}</p>
+                    <p>{assignment.volunteerPhone || "No phone number provided"}</p>
                     <p className="text-xs text-slate-400">
-                      Đăng ký {formatDateTime(assignment.assignedAt)}
+                      Applied {formatDateTime(assignment.assignedAt)}
                     </p>
                   </div>
                 </div>
@@ -123,7 +123,7 @@ export function VolunteerAssignmentsSection({
                       onClick={() => void approve(assignment.volunteerId)}
                       className="h-9 rounded-lg bg-emerald-700 px-3 text-xs font-semibold text-white hover:bg-emerald-800 disabled:bg-slate-300"
                     >
-                      Chấp nhận
+                      Accept
                     </button>
                     <button
                       type="button"
@@ -133,7 +133,7 @@ export function VolunteerAssignmentsSection({
                       }}
                       className="h-9 rounded-lg border border-rose-200 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-50"
                     >
-                      Từ chối
+                      Reject
                     </button>
                   </div>
                 ) : null}
@@ -141,7 +141,7 @@ export function VolunteerAssignmentsSection({
 
               {assignment.rejectionReason ? (
                 <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">
-                  Lý do từ chối: {assignment.rejectionReason}
+                  Rejection reason: {assignment.rejectionReason}
                 </p>
               ) : null}
 
@@ -149,7 +149,7 @@ export function VolunteerAssignmentsSection({
                 <div className="mt-4 rounded-xl bg-rose-50 p-4">
                   <label>
                     <span className="mb-1.5 block text-xs font-semibold text-rose-900">
-                      Lý do từ chối
+                      Rejection reason
                     </span>
                     <textarea
                       required
@@ -168,7 +168,7 @@ export function VolunteerAssignmentsSection({
                       onClick={() => setRejectingVolunteerId(null)}
                       className="h-8 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700"
                     >
-                      Hủy
+                      Cancel
                     </button>
                     <button
                       type="button"
@@ -179,7 +179,7 @@ export function VolunteerAssignmentsSection({
                       onClick={() => void reject(assignment.volunteerId)}
                       className="h-8 rounded-lg bg-rose-700 px-3 text-xs font-semibold text-white disabled:bg-slate-300"
                     >
-                      Xác nhận từ chối
+                      Confirm rejection
                     </button>
                   </div>
                 </div>
@@ -190,10 +190,10 @@ export function VolunteerAssignmentsSection({
       ) : (
         <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
           <p className="text-sm font-semibold text-slate-700">
-            Chưa có tình nguyện viên đăng ký
+            No volunteer applications yet
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            Các đăng ký mới sẽ xuất hiện tại đây.
+            New applications will appear here.
           </p>
         </div>
       )}
@@ -204,5 +204,5 @@ export function VolunteerAssignmentsSection({
 function getErrorMessage(error: unknown): string {
   return error instanceof Error
     ? error.message
-    : "Không thể xử lý đăng ký tình nguyện.";
+    : "Unable to process the volunteer application.";
 }

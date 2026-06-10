@@ -117,7 +117,7 @@ export function SupportNeedsSection({
   async function handleDelete(need: SupportNeed) {
     if (
       !window.confirm(
-        `Xóa nhu cầu "${need.needName}"? Thao tác này không thể hoàn tác.`,
+        `Delete the need "${need.needName}"? This action cannot be undone.`,
       )
     ) {
       return;
@@ -171,10 +171,10 @@ export function SupportNeedsSection({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-bold text-slate-950">
-            Nhu cầu hỗ trợ cụ thể
+            Specific support needs
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Theo dõi số lượng cần, đã nhận và phần còn thiếu.
+            Track required, received, and remaining quantities.
           </p>
         </div>
         {canManage ? (
@@ -183,7 +183,7 @@ export function SupportNeedsSection({
             onClick={startCreate}
             className="h-10 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800"
           >
-            Thêm nhu cầu
+            Add need
           </button>
         ) : null}
       </div>
@@ -200,10 +200,10 @@ export function SupportNeedsSection({
           className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50/50 p-4"
         >
           <h3 className="text-sm font-bold text-slate-950">
-            {editingNeedId ? "Chỉnh sửa nhu cầu" : "Thêm nhu cầu mới"}
+            {editingNeedId ? "Edit need" : "Add a new need"}
           </h3>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <FormField label="Loại hỗ trợ">
+            <FormField label="Support type">
               <select
                 value={needForm.supportType}
                 onChange={(event) =>
@@ -220,11 +220,11 @@ export function SupportNeedsSection({
                 }
                 className={inputClassName}
               >
-                <option value="GOODS">Vật phẩm</option>
-                <option value="MONEY">Tiền</option>
+                <option value="GOODS">Goods</option>
+                <option value="MONEY">Money</option>
               </select>
             </FormField>
-            <FormField label="Tên nhu cầu">
+            <FormField label="Need name">
               <input
                 required
                 maxLength={100}
@@ -232,11 +232,11 @@ export function SupportNeedsSection({
                 onChange={(event) =>
                   setNeedForm({ ...needForm, needName: event.target.value })
                 }
-                placeholder="Ví dụ: Gạo, thuốc, học phí..."
+                placeholder="Example: Rice, medicine, tuition..."
                 className={inputClassName}
               />
             </FormField>
-            <FormField label="Đơn vị">
+            <FormField label="Unit">
               <select
                 value={needForm.unit}
                 disabled={needForm.supportType === "MONEY"}
@@ -255,7 +255,7 @@ export function SupportNeedsSection({
                 ))}
               </select>
             </FormField>
-            <FormField label="Số lượng cần">
+            <FormField label="Required quantity">
               <input
                 required
                 type="number"
@@ -278,14 +278,14 @@ export function SupportNeedsSection({
               onClick={() => setShowNeedForm(false)}
               className="h-9 rounded-lg border border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700"
             >
-              Hủy
+              Cancel
             </button>
             <button
               type="submit"
               disabled={busy}
               className="h-9 rounded-lg bg-emerald-700 px-4 text-xs font-semibold text-white disabled:bg-slate-300"
             >
-              {busy ? "Đang lưu..." : editingNeedId ? "Lưu" : "Thêm"}
+              {busy ? "Saving..." : editingNeedId ? "Save" : "Add"}
             </button>
           </div>
         </form>
@@ -316,12 +316,12 @@ export function SupportNeedsSection({
                       </span>
                       {need.isFulfilled ? (
                         <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                          Đã đủ
+                          Fulfilled
                         </span>
                       ) : null}
                     </div>
                     <p className="mt-2 text-sm text-slate-500">
-                      Đã nhận{" "}
+                      Received{" "}
                       <strong className="text-slate-800">
                         {formatQuantity(need.receivedQuantity, need.unit)}
                       </strong>{" "}
@@ -340,7 +340,7 @@ export function SupportNeedsSection({
                         }}
                         className="h-8 rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white hover:bg-violet-700"
                       >
-                        Ghi nhận đóng góp
+                        Record contribution
                       </button>
                     ) : null}
                     {canManage ? (
@@ -350,7 +350,7 @@ export function SupportNeedsSection({
                           onClick={() => startEdit(need)}
                           className="h-8 rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                         >
-                          Sửa
+                          Edit
                         </button>
                         <button
                           type="button"
@@ -358,12 +358,12 @@ export function SupportNeedsSection({
                           onClick={() => void handleDelete(need)}
                           title={
                             need.receivedQuantity > 0
-                              ? "Không thể xóa nhu cầu đã có đóng góp"
-                              : "Xóa nhu cầu"
+                              ? "A need with contributions cannot be deleted"
+                              : "Delete need"
                           }
                           className="h-8 rounded-lg border border-rose-200 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
                         >
-                          Xóa
+                          Delete
                         </button>
                       </>
                     ) : null}
@@ -377,9 +377,9 @@ export function SupportNeedsSection({
                   />
                 </div>
                 <div className="mt-2 flex justify-between text-xs text-slate-400">
-                  <span>{Math.round(progress)}% hoàn thành</span>
+                  <span>{Math.round(progress)}% complete</span>
                   <span>
-                    Còn {formatQuantity(need.remainingQuantity, need.unit)}
+                    {formatQuantity(need.remainingQuantity, need.unit)} remaining
                   </span>
                 </div>
 
@@ -389,7 +389,7 @@ export function SupportNeedsSection({
                     className="mt-4 rounded-xl bg-violet-50 p-4"
                   >
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <FormField label="Số lượng đóng góp">
+                      <FormField label="Contribution quantity">
                         <input
                           required
                           type="number"
@@ -403,14 +403,14 @@ export function SupportNeedsSection({
                           className={inputClassName}
                         />
                       </FormField>
-                      <FormField label="Ghi chú">
+                      <FormField label="Note">
                         <input
                           maxLength={500}
                           value={contributionNote}
                           onChange={(event) =>
                             setContributionNote(event.target.value)
                           }
-                          placeholder="Thông tin bàn giao (không bắt buộc)"
+                          placeholder="Handover details (optional)"
                           className={inputClassName}
                         />
                       </FormField>
@@ -421,14 +421,14 @@ export function SupportNeedsSection({
                         onClick={() => setContributingNeedId(null)}
                         className="h-8 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700"
                       >
-                        Hủy
+                        Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={busy}
                         className="h-8 rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white disabled:bg-slate-300"
                       >
-                        {busy ? "Đang ghi nhận..." : "Xác nhận"}
+                        {busy ? "Recording..." : "Confirm"}
                       </button>
                     </div>
                   </form>
@@ -437,7 +437,7 @@ export function SupportNeedsSection({
                 {needContributions.length ? (
                   <div className="mt-4 border-t border-slate-100 pt-4">
                     <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                      Lịch sử đóng góp
+                      Contribution history
                     </p>
                     <div className="mt-3 space-y-2">
                       {needContributions.map((item) => (
@@ -451,7 +451,7 @@ export function SupportNeedsSection({
                             </span>
                             <span className="text-slate-500">
                               {" "}
-                              đã đóng góp{" "}
+                              contributed{" "}
                               {formatQuantity(item.quantity, need.unit)}
                             </span>
                             {item.note ? (
@@ -475,12 +475,12 @@ export function SupportNeedsSection({
       ) : (
         <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
           <p className="text-sm font-semibold text-slate-700">
-            Chưa có nhu cầu cụ thể
+            No specific needs yet
           </p>
           <p className="mt-1 text-xs leading-5 text-slate-500">
             {canManage
-              ? "Thêm nhu cầu để người hỗ trợ biết chính xác số lượng cần thiết."
-              : "Người đăng chưa khai báo vật phẩm hoặc khoản hỗ trợ cụ thể."}
+              ? "Add needs so supporters know the exact quantities required."
+              : "The requester has not listed any specific goods or funding needs."}
           </p>
         </div>
       )}
@@ -511,5 +511,5 @@ const inputClassName =
 function getErrorMessage(error: unknown): string {
   return error instanceof Error
     ? error.message
-    : "Không thể xử lý nhu cầu hỗ trợ.";
+    : "Unable to process the support need.";
 }

@@ -88,7 +88,7 @@ export function SupportRequestForm({
     const hasLongitude = form.longitude.trim() !== "";
 
     if (hasLatitude !== hasLongitude) {
-      setError("Vui lòng nhập đầy đủ cả vĩ độ và kinh độ.");
+      setError("Please provide both latitude and longitude.");
       return;
     }
 
@@ -122,7 +122,7 @@ export function SupportRequestForm({
     setError(null);
 
     if (!navigator.geolocation) {
-      setError("Trình duyệt không hỗ trợ lấy vị trí hiện tại.");
+      setError("Your browser does not support geolocation.");
       return;
     }
 
@@ -138,7 +138,7 @@ export function SupportRequestForm({
       },
       () => {
         setError(
-          "Không thể lấy vị trí. Hãy cấp quyền vị trí hoặc nhập tọa độ thủ công.",
+          "Unable to get your location. Allow location access or enter the coordinates manually.",
         );
         setLocating(false);
       },
@@ -152,7 +152,7 @@ export function SupportRequestForm({
       className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
     >
       <div className="grid gap-5 lg:grid-cols-2">
-        <Field label="Tiêu đề yêu cầu" className="lg:col-span-2">
+        <Field label="Request title" className="lg:col-span-2">
           <input
             required
             maxLength={200}
@@ -160,12 +160,12 @@ export function SupportRequestForm({
             onChange={(event) =>
               setForm({ ...form, title: event.target.value })
             }
-            placeholder="Ví dụ: Cần hỗ trợ chi phí điều trị"
+            placeholder="Example: Need help covering medical expenses"
             className={inputClassName}
           />
         </Field>
 
-        <Field label="Danh mục">
+        <Field label="Category">
           <select
             required
             disabled={loadingCategories}
@@ -176,7 +176,7 @@ export function SupportRequestForm({
             className={inputClassName}
           >
             <option value="">
-              {loadingCategories ? "Đang tải danh mục..." : "Chọn danh mục"}
+              {loadingCategories ? "Loading categories..." : "Select a category"}
             </option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -186,19 +186,19 @@ export function SupportRequestForm({
           </select>
         </Field>
 
-        <Field label="Địa chỉ">
+        <Field label="Address">
           <input
             maxLength={500}
             value={form.address}
             onChange={(event) =>
               setForm({ ...form, address: event.target.value })
             }
-            placeholder="Địa chỉ nơi cần hỗ trợ"
+            placeholder="Address where support is needed"
             className={inputClassName}
           />
         </Field>
 
-        <Field label="Mô tả chi tiết" className="lg:col-span-2">
+        <Field label="Detailed description" className="lg:col-span-2">
           <textarea
             required
             rows={7}
@@ -206,12 +206,12 @@ export function SupportRequestForm({
             onChange={(event) =>
               setForm({ ...form, description: event.target.value })
             }
-            placeholder="Mô tả hoàn cảnh, nhu cầu và thông tin cần thiết để người hỗ trợ hiểu rõ..."
+            placeholder="Describe the situation, needs, and any details supporters should know..."
             className={`${inputClassName} min-h-40 resize-y py-3`}
           />
           <p className="mt-2 text-xs leading-5 text-slate-500">
-            Không đưa mật khẩu, số tài khoản hoặc dữ liệu nhạy cảm không cần
-            thiết vào phần mô tả.
+            Do not include passwords, bank account details, or unnecessary
+            sensitive information.
           </p>
         </Field>
       </div>
@@ -220,11 +220,11 @@ export function SupportRequestForm({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-sm font-semibold text-slate-900">
-              Tọa độ hỗ trợ
+              Support location coordinates
             </h3>
             <p className="mt-1 text-xs leading-5 text-slate-500">
-              Không bắt buộc, nhưng giúp đội ngũ điều phối xác định vị trí chính
-              xác hơn.
+              Optional, but coordinates help coordinators identify the exact
+              location.
             </p>
           </div>
           <button
@@ -233,11 +233,11 @@ export function SupportRequestForm({
             disabled={locating}
             className="h-9 shrink-0 rounded-lg border border-emerald-200 bg-white px-3 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-60"
           >
-            {locating ? "Đang lấy vị trí..." : "Dùng vị trí hiện tại"}
+            {locating ? "Getting location..." : "Use current location"}
           </button>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field label="Vĩ độ">
+          <Field label="Latitude">
             <input
               type="number"
               step="any"
@@ -251,7 +251,7 @@ export function SupportRequestForm({
               className={inputClassName}
             />
           </Field>
-          <Field label="Kinh độ">
+          <Field label="Longitude">
             <input
               type="number"
               step="any"
@@ -281,14 +281,14 @@ export function SupportRequestForm({
           disabled={submitting}
           className="h-11 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
         >
-          Hủy
+          Cancel
         </button>
         <button
           type="submit"
           disabled={submitting || loadingCategories || !categories.length}
           className="h-11 rounded-xl bg-emerald-700 px-6 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
-          {submitting ? "Đang lưu..." : submitLabel}
+          {submitting ? "Saving..." : submitLabel}
         </button>
       </div>
     </form>
@@ -318,5 +318,5 @@ const inputClassName =
   "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100";
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Không thể lưu yêu cầu.";
+  return error instanceof Error ? error.message : "Unable to save the request.";
 }

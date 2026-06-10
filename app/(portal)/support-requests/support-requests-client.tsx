@@ -115,21 +115,21 @@ export default function SupportRequestsClient() {
       );
     }
 
-    const normalizedQuery = query.trim().toLocaleLowerCase("vi");
+    const normalizedQuery = query.trim().toLocaleLowerCase("en");
 
     return source.filter((request) => {
       const statusMatches =
         statusFilter === "ALL" || request.status === statusFilter;
       const queryMatches =
         !normalizedQuery ||
-        request.title.toLocaleLowerCase("vi").includes(normalizedQuery) ||
+        request.title.toLocaleLowerCase("en").includes(normalizedQuery) ||
         request.categoryName
-          .toLocaleLowerCase("vi")
+          .toLocaleLowerCase("en")
           .includes(normalizedQuery) ||
         request.requesterName
-          .toLocaleLowerCase("vi")
+          .toLocaleLowerCase("en")
           .includes(normalizedQuery) ||
-        request.address?.toLocaleLowerCase("vi").includes(normalizedQuery);
+        request.address?.toLocaleLowerCase("en").includes(normalizedQuery);
 
       return statusMatches && Boolean(queryMatches);
     });
@@ -157,7 +157,7 @@ export default function SupportRequestsClient() {
               href="/support-requests/new"
               className="inline-flex h-11 items-center rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white hover:bg-emerald-800"
             >
-              Đăng yêu cầu mới
+              Create request
             </Link>
           ) : null
         }
@@ -171,7 +171,7 @@ export default function SupportRequestsClient() {
             className="font-semibold underline"
             onClick={() => void loadData()}
           >
-            Thử lại
+            Try again
           </button>
         </Notice>
       ) : null}
@@ -185,8 +185,8 @@ export default function SupportRequestsClient() {
               className={tabClassName(view === "primary")}
             >
               {profile.role === "REQUESTER"
-                ? "Yêu cầu của tôi"
-                : "Đang cần hỗ trợ"}
+                ? "My requests"
+                : "Seeking support"}
             </button>
             <button
               type="button"
@@ -194,8 +194,8 @@ export default function SupportRequestsClient() {
               className={tabClassName(view === "secondary")}
             >
               {profile.role === "REQUESTER"
-                ? "Yêu cầu cộng đồng"
-                : "Phân công của tôi"}
+                ? "Community requests"
+                : "My assignments"}
             </button>
           </div>
         )}
@@ -203,12 +203,12 @@ export default function SupportRequestsClient() {
         {!showAssignments ? (
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <label className="relative block w-full xl:max-w-sm">
-              <span className="sr-only">Tìm kiếm yêu cầu</span>
+              <span className="sr-only">Search requests</span>
               <SearchIcon />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Tìm theo tiêu đề, danh mục, địa chỉ..."
+                placeholder="Search by title, category, or address..."
                 className="h-11 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-3 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
               />
             </label>
@@ -225,7 +225,7 @@ export default function SupportRequestsClient() {
                   }`}
                 >
                   {status === "ALL"
-                    ? "Tất cả"
+                    ? "All"
                     : SUPPORT_REQUEST_STATUS_LABELS[status]}
                 </button>
               ))}
@@ -257,26 +257,26 @@ export default function SupportRequestsClient() {
                   {assignment.supportRequestTitle}
                 </Link>
                 <p className="mt-2 text-sm text-slate-500">
-                  Người đăng: {assignment.requesterName}
+                  Requester: {assignment.requesterName}
                 </p>
                 {assignment.rejectionReason ? (
                   <p className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-800">
-                    Lý do: {assignment.rejectionReason}
+                    Reason: {assignment.rejectionReason}
                   </p>
                 ) : null}
                 <Link
                   href={`/support-requests/${assignment.supportRequestId}`}
                   className="mt-5 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-900"
                 >
-                  Mở yêu cầu
+                  Open request
                 </Link>
               </article>
             ))}
           </div>
         ) : (
           <EmptyState
-            title="Bạn chưa có phân công nào"
-            description="Chọn một yêu cầu đang được duyệt và đăng ký tham gia hỗ trợ."
+            title="You have no assignments yet"
+            description="Choose an approved request and apply to provide support."
           />
         )
       ) : visibleRequests.length ? (
@@ -287,14 +287,14 @@ export default function SupportRequestsClient() {
         </div>
       ) : (
         <EmptyState
-          title="Không tìm thấy yêu cầu phù hợp"
-          description="Thử thay đổi trạng thái hoặc từ khóa tìm kiếm."
+          title="No matching requests found"
+          description="Try changing the status filter or search terms."
           actionHref={
             profile.role === "REQUESTER" && view === "primary"
               ? "/support-requests/new"
               : undefined
           }
-          actionLabel="Đăng yêu cầu mới"
+          actionLabel="Create request"
         />
       )}
     </div>
@@ -303,26 +303,26 @@ export default function SupportRequestsClient() {
 
 function getPageTitle(role: string): string {
   if (role === "REQUESTER") {
-    return "Quản lý yêu cầu hỗ trợ";
+    return "Manage support requests";
   }
 
   if (role === "VOLUNTEER") {
-    return "Tìm cơ hội hỗ trợ";
+    return "Find support opportunities";
   }
 
-  return "Điều phối yêu cầu hỗ trợ";
+  return "Coordinate support requests";
 }
 
 function getPageDescription(role: string): string {
   if (role === "REQUESTER") {
-    return "Theo dõi trạng thái, cập nhật nhu cầu và xét duyệt tình nguyện viên.";
+    return "Track statuses, update needs, and review volunteer applications.";
   }
 
   if (role === "VOLUNTEER") {
-    return "Chọn yêu cầu phù hợp với khả năng và theo dõi các đăng ký của bạn.";
+    return "Choose requests that match your abilities and track your applications.";
   }
 
-  return "Duyệt thông tin, gán điểm hỗ trợ và theo dõi tiến độ của toàn hệ thống.";
+  return "Review details, assign support locations, and track system-wide progress.";
 }
 
 function tabClassName(active: boolean): string {
@@ -352,5 +352,5 @@ function SearchIcon() {
 function getErrorMessage(error: unknown): string {
   return error instanceof Error
     ? error.message
-    : "Không thể tải danh sách yêu cầu.";
+    : "Unable to load support requests.";
 }

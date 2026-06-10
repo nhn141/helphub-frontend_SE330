@@ -23,13 +23,13 @@ const roleOptions: Array<{
 }> = [
     {
       value: "REQUESTER",
-      label: "Người cần hỗ trợ",
-      description: "Tạo yêu cầu và theo dõi hỗ trợ.",
+      label: "Requester",
+      description: "Create requests and track support.",
     },
     {
       value: "VOLUNTEER",
-      label: "Tình nguyện viên",
-      description: "Nhận phân công và đóng góp nguồn lực.",
+      label: "Volunteer",
+      description: "Join assignments and contribute resources.",
     },
   ];
 
@@ -66,7 +66,7 @@ export default function AuthClient() {
       });
 
       saveSession(auth);
-      setNotice({ type: "success", message: "Đăng nhập thành công." });
+      setNotice({ type: "success", message: "Signed in successfully." });
       router.push("/dashboard");
     } catch (error) {
       setNotice({ type: "error", message: getErrorMessage(error) });
@@ -102,7 +102,7 @@ export default function AuthClient() {
       setMode("login");
       setNotice({
         type: "success",
-        message: "Đăng ký tài khoản mới thành công.",
+        message: "Your account was created successfully.",
       });
     } catch (error) {
       setNotice({ type: "error", message: getErrorMessage(error) });
@@ -117,7 +117,7 @@ export default function AuthClient() {
         <section className="relative min-h-[380px] overflow-hidden bg-slate-950 text-white lg:min-h-dvh">
           <Image
             src="/helphub-auth-hero.png"
-            alt="Các tình nguyện viên đang phối hợp đồ cứu trợ cộng đồng"
+            alt="Volunteers coordinating community relief supplies"
             fill
             priority
             sizes="(min-width: 1024px) 58vw, 100vw"
@@ -131,13 +131,13 @@ export default function AuthClient() {
               </div>
               <div>
                 <p className="text-lg font-semibold">HelpHub</p>
-                <p className="text-sm text-white/78">Lan tỏa yêu thương</p>
+                <p className="text-sm text-white/78">Support that reaches people</p>
               </div>
             </div>
 
             <div className="max-w-xl">
               <h1 className="hero-slogan text-4xl font-semibold leading-[1.12] sm:text-5xl lg:text-6xl">
-                Kết nối người cần hỗ trợ và các tình nguyện viên trên khắp mọi miền
+                Connecting people who need support with volunteers everywhere
               </h1>
             </div>
           </div>
@@ -147,7 +147,7 @@ export default function AuthClient() {
           <div className="mx-auto w-full max-w-[520px]">
             <div className="mb-6 lg:hidden">
               <p className="text-2xl font-semibold">HelpHub</p>
-              <p className="mt-1 text-sm text-slate-600">Lan tỏa yêu thương</p>
+              <p className="mt-1 text-sm text-slate-600">Support that reaches people</p>
             </div>
 
             <AuthPanel
@@ -200,14 +200,14 @@ function AuthPanel({
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-7">
       <div className="mb-6">
         <h2 className="text-3xl font-semibold leading-tight text-emerald-700 sm:text-[2rem]">
-          {isLogin ? "Đăng nhập" : "Đăng ký tài khoản mới"}
+          {isLogin ? "Sign in" : "Create an account"}
         </h2>
       </div>
 
       <div
         className="mb-6 grid grid-cols-2 gap-1 rounded-md border border-slate-200 bg-slate-50 p-1"
         role="tablist"
-        aria-label="Chọn chế độ xác thực"
+        aria-label="Choose authentication mode"
       >
         <button
           type="button"
@@ -216,7 +216,7 @@ function AuthPanel({
           className={tabClassName(isLogin)}
           onClick={() => onModeChange("login")}
         >
-          Đăng nhập
+          Sign in
         </button>
         <button
           type="button"
@@ -225,7 +225,7 @@ function AuthPanel({
           className={tabClassName(!isLogin)}
           onClick={() => onModeChange("register")}
         >
-          Đăng ký
+          Register
         </button>
       </div>
 
@@ -243,12 +243,12 @@ function AuthPanel({
           />
           <TextField
             autoComplete="current-password"
-            label="Mật khẩu"
+            label="Password"
             name="password"
             onChange={(value) =>
               setLoginForm({ ...loginForm, password: value })
             }
-            placeholder="Nhập mật khẩu"
+            placeholder="Enter your password"
             required
             type="password"
             value={loginForm.password}
@@ -258,14 +258,14 @@ function AuthPanel({
             disabled={busy === "login"}
             className="mt-2 h-11 w-full rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {busy === "login" ? "Đang đăng nhập..." : "Đăng nhập"}
+            {busy === "login" ? "Signing in..." : "Sign in"}
           </button>
         </form>
       ) : (
         <form className="space-y-4" onSubmit={onRegister}>
           <TextField
             autoComplete="name"
-            label="Họ và tên"
+            label="Full name"
             maxLength={50}
             name="fullName"
             onChange={(value) =>
@@ -289,7 +289,7 @@ function AuthPanel({
           />
           <TextField
             autoComplete="new-password"
-            label="Mật khẩu (tối thiểu 8 ký tự)"
+            label="Password (at least 8 characters)"
             maxLength={100}
             minLength={8}
             name="registerPassword"
@@ -302,7 +302,7 @@ function AuthPanel({
           />
           <TextField
             autoComplete="tel"
-            label="Số điện thoại"
+            label="Phone number"
             maxLength={20}
             name="phone"
             onChange={(value) =>
@@ -314,7 +314,7 @@ function AuthPanel({
 
           <fieldset>
             <legend className="mb-2 block text-sm font-medium text-slate-700">
-              Vai trò
+              Role
             </legend>
             <div className="grid gap-2 sm:grid-cols-2">
               {roleOptions.map((option) => {
@@ -357,7 +357,7 @@ function AuthPanel({
             disabled={busy === "register"}
             className="mt-2 h-11 w-full rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {busy === "register" ? "Đang tạo tài khoản..." : "Đăng ký"}
+            {busy === "register" ? "Creating account..." : "Register"}
           </button>
         </form>
       )}
@@ -409,8 +409,8 @@ function TextField({
         {isPassword ? (
           <button
             type="button"
-            aria-label={passwordVisible ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
-            title={passwordVisible ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+            aria-label={passwordVisible ? "Hide password" : "Show password"}
+            title={passwordVisible ? "Hide password" : "Show password"}
             onClick={() => setPasswordVisible((current) => !current)}
             className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100"
           >
@@ -471,5 +471,5 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return "Có lỗi xảy ra, vui lòng thử lại.";
+  return "Something went wrong. Please try again.";
 }

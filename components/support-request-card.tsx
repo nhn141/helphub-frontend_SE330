@@ -35,7 +35,7 @@ export function SupportRequestCard({
         <p className="flex items-start gap-2">
           <LocationIcon />
           <span className="line-clamp-2">
-            {request.address || "Chưa cung cấp địa chỉ"}
+            {request.address || "No address provided"}
           </span>
         </p>
       </div>
@@ -47,7 +47,7 @@ export function SupportRequestCard({
             href={`/support-requests/${request.id}`}
             className="font-semibold text-emerald-700 hover:text-emerald-900"
           >
-            Xem chi tiết
+            View details
           </Link>
         </div>
         {footer ? <div className="mt-3">{footer}</div> : null}

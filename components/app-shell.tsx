@@ -10,12 +10,12 @@ import { ROLE_LABELS } from "@/lib/support-request-ui";
 const navigation = [
   {
     href: "/dashboard",
-    label: "Tổng quan",
+    label: "Overview",
     icon: HomeIcon,
   },
   {
     href: "/support-requests",
-    label: "Yêu cầu hỗ trợ",
+    label: "Support requests",
     icon: SupportIcon,
   },
 ];
@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            aria-label="Đóng menu"
+            aria-label="Close menu"
             className="absolute inset-0 bg-slate-950/45"
             onClick={() => setMobileMenuOpen(false)}
           />
@@ -61,7 +61,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              aria-label="Mở menu"
+              aria-label="Open menu"
               onClick={() => setMobileMenuOpen(true)}
               className="flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700 lg:hidden"
             >
@@ -72,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {getPageTitle(pathname)}
               </p>
               <p className="hidden text-xs text-slate-500 sm:block">
-                Kết nối hỗ trợ minh bạch và đúng nhu cầu
+                Transparent support matched to real needs
               </p>
             </div>
           </div>
@@ -84,7 +84,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className="hidden h-9 items-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800 sm:flex"
               >
                 <PlusIcon />
-                Đăng yêu cầu
+                Create request
               </Link>
             ) : null}
             <div className="flex size-9 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
@@ -122,7 +122,7 @@ function SidebarContent({
         </div>
         <div>
           <p className="text-lg font-bold tracking-tight">HelpHub</p>
-          <p className="text-xs text-emerald-100/70">Cổng điều phối hỗ trợ</p>
+          <p className="text-xs text-emerald-100/70">Support coordination portal</p>
         </div>
       </div>
 
@@ -161,7 +161,7 @@ function SidebarContent({
             className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/12 text-xs font-semibold text-white/75 hover:bg-white/8 hover:text-white"
           >
             <LogoutIcon />
-            Đăng xuất
+            Sign out
           </button>
         </div>
       </div>
@@ -171,22 +171,22 @@ function SidebarContent({
 
 function getPageTitle(pathname: string): string {
   if (pathname === "/support-requests/new") {
-    return "Đăng yêu cầu hỗ trợ";
+    return "Create support request";
   }
 
   if (pathname.includes("/edit")) {
-    return "Chỉnh sửa yêu cầu";
+    return "Edit request";
   }
 
   if (pathname.startsWith("/support-requests/")) {
-    return "Chi tiết yêu cầu";
+    return "Request details";
   }
 
   if (pathname.startsWith("/support-requests")) {
-    return "Yêu cầu hỗ trợ";
+    return "Support requests";
   }
 
-  return "Tổng quan";
+  return "Overview";
 }
 
 function getInitials(name: string): string {

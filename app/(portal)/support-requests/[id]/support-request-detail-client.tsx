@@ -153,13 +153,13 @@ export default function SupportRequestDetailClient({
   }
 
   if (loading) {
-    return <LoadingBlock message="Đang tải chi tiết yêu cầu..." />;
+    return <LoadingBlock message="Loading request details..." />;
   }
 
   if (!request) {
     return (
       <Notice type="error">
-        {error ?? "Không tìm thấy yêu cầu hỗ trợ."}
+        {error ?? "Support request not found."}
       </Notice>
     );
   }
@@ -183,7 +183,7 @@ export default function SupportRequestDetailClient({
       <PageHeading
         eyebrow={request.categoryName}
         title={request.title}
-        description={`Đăng bởi ${request.requesterName} · ${formatDateTime(request.createdAt)}`}
+        description={`Posted by ${request.requesterName} · ${formatDateTime(request.createdAt)}`}
         action={<StatusBadge status={request.status} />}
       />
 
@@ -194,7 +194,7 @@ export default function SupportRequestDetailClient({
         <div className="space-y-6">
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <h2 className="text-lg font-bold text-slate-950">
-              Nội dung yêu cầu
+              Request details
             </h2>
             <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700">
               {request.description}
@@ -203,7 +203,7 @@ export default function SupportRequestDetailClient({
             {request.rejectionReason ? (
               <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4">
                 <p className="text-xs font-bold uppercase tracking-wide text-rose-700">
-                  Lý do từ chối
+                  Rejection reason
                 </p>
                 <p className="mt-2 text-sm text-rose-900">
                   {request.rejectionReason}
@@ -233,20 +233,20 @@ export default function SupportRequestDetailClient({
 
         <aside className="space-y-5">
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="font-bold text-slate-950">Thông tin điều phối</h2>
+            <h2 className="font-bold text-slate-950">Coordination details</h2>
             <dl className="mt-4 space-y-4 text-sm">
-              <InfoRow label="Người đăng" value={request.requesterName} />
-              <InfoRow label="Vai trò của bạn" value={ROLE_LABELS[profile.role]} />
+              <InfoRow label="Requester" value={request.requesterName} />
+              <InfoRow label="Your role" value={ROLE_LABELS[profile.role]} />
               <InfoRow
-                label="Địa chỉ"
-                value={request.address || "Chưa cung cấp"}
+                label="Address"
+                value={request.address || "Not provided"}
               />
               <InfoRow
-                label="Điểm hỗ trợ"
-                value={request.assignedSupportLocationName || "Chưa được gán"}
+                label="Support location"
+                value={request.assignedSupportLocationName || "Not assigned"}
               />
               <InfoRow
-                label="Cập nhật"
+                label="Last updated"
                 value={formatDateTime(request.updatedAt)}
               />
             </dl>
@@ -258,29 +258,29 @@ export default function SupportRequestDetailClient({
                 rel="noreferrer"
                 className="mt-4 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-900"
               >
-                Mở vị trí trên bản đồ
+                Open location in maps
               </a>
             ) : null}
           </section>
 
           {isOwner && request.status === "PENDING" ? (
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="font-bold text-slate-950">Quản lý yêu cầu</h2>
+              <h2 className="font-bold text-slate-950">Manage request</h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Bạn có thể chỉnh sửa thông tin khi yêu cầu chưa được duyệt.
+                You can edit request details while it is pending review.
               </p>
               <Link
                 href={`/support-requests/${supportRequestId}/edit`}
                 className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
               >
-                Chỉnh sửa yêu cầu
+                Edit request
               </Link>
             </section>
           ) : null}
 
           {isReviewer ? (
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="font-bold text-slate-950">Xử lý yêu cầu</h2>
+              <h2 className="font-bold text-slate-950">Review request</h2>
 
               {request.status === "PENDING" ? (
                 <div className="mt-4 space-y-3">
@@ -290,7 +290,7 @@ export default function SupportRequestDetailClient({
                     onClick={() =>
                       void runAction(
                         "approve",
-                        "Yêu cầu đã được duyệt.",
+                        "The request has been approved.",
                         (token) =>
                           approveSupportRequest(token, supportRequestId),
                       )
@@ -298,15 +298,15 @@ export default function SupportRequestDetailClient({
                     className="h-10 w-full rounded-xl bg-emerald-700 text-sm font-semibold text-white hover:bg-emerald-800 disabled:bg-slate-300"
                   >
                     {busyAction === "approve"
-                      ? "Đang duyệt..."
-                      : "Duyệt yêu cầu"}
+                      ? "Approving..."
+                      : "Approve request"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowRejectForm(true)}
                     className="h-10 w-full rounded-xl border border-rose-200 text-sm font-semibold text-rose-700 hover:bg-rose-50"
                   >
-                    Từ chối yêu cầu
+                    Reject request
                   </button>
                 </div>
               ) : null}
@@ -315,7 +315,7 @@ export default function SupportRequestDetailClient({
                 <div className="mt-4 rounded-xl bg-rose-50 p-4">
                   <label>
                     <span className="mb-1.5 block text-xs font-semibold text-rose-900">
-                      Lý do từ chối
+                      Rejection reason
                     </span>
                     <textarea
                       rows={4}
@@ -333,7 +333,7 @@ export default function SupportRequestDetailClient({
                       onClick={() => setShowRejectForm(false)}
                       className="h-8 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700"
                     >
-                      Hủy
+                      Cancel
                     </button>
                     <button
                       type="button"
@@ -341,7 +341,7 @@ export default function SupportRequestDetailClient({
                       onClick={async () => {
                         const succeeded = await runAction(
                           "reject",
-                          "Yêu cầu đã bị từ chối.",
+                          "The request has been rejected.",
                           (token) =>
                             rejectSupportRequest(
                               token,
@@ -357,7 +357,7 @@ export default function SupportRequestDetailClient({
                       }}
                       className="h-8 rounded-lg bg-rose-700 px-3 text-xs font-semibold text-white disabled:bg-slate-300"
                     >
-                      Xác nhận
+                      Confirm
                     </button>
                   </div>
                 </div>
@@ -367,7 +367,7 @@ export default function SupportRequestDetailClient({
                 <div className="mt-4">
                   <label>
                     <span className="mb-1.5 block text-xs font-semibold text-slate-700">
-                      Điểm hỗ trợ phụ trách
+                      Assigned support location
                     </span>
                     <select
                       value={selectedLocationId}
@@ -376,7 +376,7 @@ export default function SupportRequestDetailClient({
                       }
                       className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-emerald-600"
                     >
-                      <option value="">Chọn điểm hỗ trợ</option>
+                      <option value="">Select a support location</option>
                       {locations.map((location) => (
                         <option key={location.id} value={location.id}>
                           {location.name}
@@ -390,7 +390,7 @@ export default function SupportRequestDetailClient({
                     onClick={() =>
                       void runAction(
                         "location",
-                        "Đã gán điểm hỗ trợ cho yêu cầu.",
+                        "The support location has been assigned.",
                         (token) =>
                           assignSupportLocation(
                             token,
@@ -402,12 +402,12 @@ export default function SupportRequestDetailClient({
                     className="mt-3 h-10 w-full rounded-xl bg-slate-950 text-sm font-semibold text-white hover:bg-slate-800 disabled:bg-slate-300"
                   >
                     {busyAction === "location"
-                      ? "Đang cập nhật..."
-                      : "Gán điểm hỗ trợ"}
+                      ? "Updating..."
+                      : "Assign support location"}
                   </button>
                   {!locations.length ? (
                     <p className="mt-2 text-xs leading-5 text-amber-700">
-                      Chưa có điểm hỗ trợ đang hoạt động trong hệ thống.
+                      There are no active support locations in the system.
                     </p>
                   ) : null}
                 </div>
@@ -416,8 +416,8 @@ export default function SupportRequestDetailClient({
               {request.status !== "PENDING" &&
               request.status !== "APPROVED" ? (
                 <p className="mt-3 text-sm leading-6 text-slate-500">
-                  Yêu cầu đang ở giai đoạn thực hiện hoặc đã kết thúc, không còn
-                  thao tác duyệt.
+                  This request is already in progress or closed and can no
+                  longer be reviewed.
                 </p>
               ) : null}
             </section>
@@ -426,12 +426,12 @@ export default function SupportRequestDetailClient({
           {profile.role === "VOLUNTEER" ? (
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="font-bold text-slate-950">
-                Tham gia hỗ trợ
+                Join this request
               </h2>
               {myAssignment ? (
                 <>
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Trạng thái đăng ký:{" "}
+                    Application status:{" "}
                     <strong className="text-slate-800">
                       {getAssignmentLabel(myAssignment.status)}
                     </strong>
@@ -449,7 +449,7 @@ export default function SupportRequestDetailClient({
                       onClick={() =>
                         void runAction(
                           "cancel",
-                          "Đã hủy đăng ký tham gia.",
+                          "Your application has been cancelled.",
                           (token) =>
                             cancelVolunteerAssignment(
                               token,
@@ -459,7 +459,7 @@ export default function SupportRequestDetailClient({
                       }
                       className="mt-4 h-10 w-full rounded-xl border border-rose-200 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                     >
-                      Hủy đăng ký
+                      Cancel application
                     </button>
                   )}
                   {myAssignment.status === "ACCEPTED" ? (
@@ -469,7 +469,7 @@ export default function SupportRequestDetailClient({
                       onClick={() =>
                         void runAction(
                           "complete",
-                          "Đã đánh dấu hoàn thành phần việc.",
+                          "Your assignment has been marked as completed.",
                           (token) =>
                             completeVolunteerAssignment(
                               token,
@@ -479,7 +479,7 @@ export default function SupportRequestDetailClient({
                       }
                       className="mt-3 h-10 w-full rounded-xl bg-emerald-700 text-sm font-semibold text-white hover:bg-emerald-800 disabled:bg-slate-300"
                     >
-                      Hoàn thành phần việc
+                      Complete assignment
                     </button>
                   ) : null}
                 </>
@@ -487,7 +487,8 @@ export default function SupportRequestDetailClient({
                 request.status === "IN_PROGRESS" ? (
                 <>
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Đăng ký tham gia để người đăng yêu cầu xét duyệt.
+                    Apply to participate and wait for the requester to review
+                    your application.
                   </p>
                   <button
                     type="button"
@@ -495,7 +496,7 @@ export default function SupportRequestDetailClient({
                     onClick={() =>
                       void runAction(
                         "apply",
-                        "Đã gửi đăng ký tham gia hỗ trợ.",
+                        "Your volunteer application has been submitted.",
                         (token) =>
                           applyToSupportRequest(token, supportRequestId),
                       )
@@ -503,14 +504,14 @@ export default function SupportRequestDetailClient({
                     className="mt-4 h-10 w-full rounded-xl bg-emerald-700 text-sm font-semibold text-white hover:bg-emerald-800 disabled:bg-slate-300"
                   >
                     {busyAction === "apply"
-                      ? "Đang gửi..."
-                      : "Đăng ký hỗ trợ"}
+                      ? "Submitting..."
+                      : "Apply to support"}
                   </button>
                 </>
               ) : (
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Chỉ yêu cầu đã duyệt hoặc đang thực hiện mới nhận đăng ký tình
-                  nguyện.
+                  Volunteer applications are only available for approved or
+                  in-progress requests.
                 </p>
               )}
             </section>
@@ -534,11 +535,11 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 function getAssignmentLabel(status: VolunteerAssignment["status"]): string {
   const labels: Record<VolunteerAssignment["status"], string> = {
-    PENDING: "Chờ xác nhận",
-    ACCEPTED: "Đã được chấp nhận",
-    REJECTED: "Bị từ chối",
-    CANCELLED: "Đã hủy",
-    COMPLETED: "Đã hoàn thành",
+    PENDING: "Pending approval",
+    ACCEPTED: "Accepted",
+    REJECTED: "Rejected",
+    CANCELLED: "Cancelled",
+    COMPLETED: "Completed",
   };
 
   return labels[status];
@@ -547,5 +548,5 @@ function getAssignmentLabel(status: VolunteerAssignment["status"]): string {
 function getErrorMessage(error: unknown): string {
   return error instanceof Error
     ? error.message
-    : "Không thể xử lý yêu cầu hỗ trợ.";
+    : "Unable to process the support request.";
 }

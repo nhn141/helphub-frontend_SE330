@@ -36,12 +36,12 @@ export default function EditSupportRequestClient({
       const request = await getSupportRequest(token, supportRequestId);
 
       if (request.requesterId !== profile.id) {
-        setError("Bạn chỉ có thể chỉnh sửa yêu cầu do mình đăng.");
+        setError("You can only edit requests that you created.");
         return;
       }
 
       if (request.status !== "PENDING") {
-        setError("Chỉ yêu cầu đang chờ duyệt mới có thể chỉnh sửa.");
+        setError("Only requests pending review can be edited.");
         return;
       }
 
@@ -67,7 +67,7 @@ export default function EditSupportRequestClient({
   }, [loadRequest]);
 
   if (profile.role !== "REQUESTER") {
-    return <Notice type="error">Bạn không có quyền chỉnh sửa yêu cầu.</Notice>;
+    return <Notice type="error">You do not have permission to edit this request.</Notice>;
   }
 
   if (error) {
@@ -75,7 +75,7 @@ export default function EditSupportRequestClient({
   }
 
   if (!initialValue) {
-    return <LoadingBlock message="Đang tải thông tin yêu cầu..." />;
+    return <LoadingBlock message="Loading request details..." />;
   }
 
   async function handleSubmit(payload: SupportRequestPayload) {
@@ -87,13 +87,13 @@ export default function EditSupportRequestClient({
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <PageHeading
-        eyebrow="Cập nhật thông tin"
-        title="Chỉnh sửa yêu cầu hỗ trợ"
-        description="Các thay đổi được phép khi yêu cầu vẫn đang ở trạng thái chờ duyệt."
+        eyebrow="Update details"
+        title="Edit support request"
+        description="Changes are allowed while the request is still pending review."
       />
       <SupportRequestForm
         initialValue={initialValue}
-        submitLabel="Lưu thay đổi"
+        submitLabel="Save changes"
         onSubmit={handleSubmit}
         onCancel={() =>
           router.push(`/support-requests/${supportRequestId}`)
@@ -106,5 +106,5 @@ export default function EditSupportRequestClient({
 function getErrorMessage(error: unknown): string {
   return error instanceof Error
     ? error.message
-    : "Không thể tải thông tin yêu cầu.";
+    : "Unable to load request details.";
 }

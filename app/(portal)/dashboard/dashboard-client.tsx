@@ -73,14 +73,14 @@ export default function DashboardClient() {
   );
 
   if (loading) {
-    return <LoadingBlock message="Đang tổng hợp hoạt động hỗ trợ..." />;
+    return <LoadingBlock message="Loading support activity..." />;
   }
 
   return (
     <div className="space-y-7">
       <PageHeading
         eyebrow="HelpHub portal"
-        title={`Xin chào, ${profile.fullName}`}
+        title={`Welcome, ${profile.fullName}`}
         description={getDashboardDescription(profile.role)}
         action={
           profile.role === "REQUESTER" ? (
@@ -88,14 +88,14 @@ export default function DashboardClient() {
               href="/support-requests/new"
               className="inline-flex h-11 items-center rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white hover:bg-emerald-800"
             >
-              Đăng yêu cầu mới
+              Create request
             </Link>
           ) : (
             <Link
               href="/support-requests"
               className="inline-flex h-11 items-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 hover:border-emerald-300 hover:text-emerald-800"
             >
-              Mở danh sách yêu cầu
+              View requests
             </Link>
           )
         }
@@ -109,7 +109,7 @@ export default function DashboardClient() {
             className="font-semibold underline"
             onClick={() => void loadDashboard()}
           >
-            Thử lại
+            Try again
           </button>
         </Notice>
       ) : null}
@@ -140,20 +140,20 @@ export default function DashboardClient() {
           <div>
             <h2 className="text-lg font-bold text-slate-950">
               {profile.role === "REQUESTER"
-                ? "Yêu cầu gần đây của bạn"
+                ? "Your recent requests"
                 : profile.role === "VOLUNTEER"
-                  ? "Yêu cầu đang cần hỗ trợ"
-                  : "Yêu cầu mới nhất"}
+                  ? "Requests seeking support"
+                  : "Latest requests"}
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Theo dõi tiến độ và xử lý bước tiếp theo.
+              Track progress and take the next action.
             </p>
           </div>
           <Link
             href="/support-requests"
             className="text-sm font-semibold text-emerald-700 hover:text-emerald-900"
           >
-            Xem tất cả
+            View all
           </Link>
         </div>
 
@@ -165,11 +165,11 @@ export default function DashboardClient() {
           </div>
         ) : (
           <EmptyState
-            title="Chưa có hoạt động support request"
+            title="No support request activity yet"
             description={
               profile.role === "REQUESTER"
-                ? "Hãy đăng yêu cầu đầu tiên và mô tả rõ nhu cầu để đội ngũ HelpHub có thể hỗ trợ."
-                : "Hiện chưa có yêu cầu phù hợp với vai trò của bạn."
+                ? "Create your first request and clearly describe what you need so HelpHub can coordinate support."
+                : "There are currently no requests matching your role."
             }
             actionHref={
               profile.role === "REQUESTER"
@@ -178,8 +178,8 @@ export default function DashboardClient() {
             }
             actionLabel={
               profile.role === "REQUESTER"
-                ? "Đăng yêu cầu"
-                : "Mở danh sách"
+                ? "Create request"
+                : "View requests"
             }
           />
         )}
@@ -196,22 +196,22 @@ function getMetrics(
   if (role === "VOLUNTEER") {
     return [
       {
-        label: "Có thể đăng ký",
+        label: "Available to join",
         value: requests.length,
         color: "bg-emerald-50 text-emerald-700",
       },
       {
-        label: "Chờ xác nhận",
+        label: "Pending approval",
         value: assignments.filter((item) => item.status === "PENDING").length,
         color: "bg-amber-50 text-amber-700",
       },
       {
-        label: "Đang tham gia",
+        label: "Active assignments",
         value: assignments.filter((item) => item.status === "ACCEPTED").length,
         color: "bg-sky-50 text-sky-700",
       },
       {
-        label: "Đã hoàn thành",
+        label: "Completed",
         value: assignments.filter((item) => item.status === "COMPLETED").length,
         color: "bg-violet-50 text-violet-700",
       },
@@ -240,14 +240,14 @@ function getMetrics(
 
 function getDashboardDescription(role: string): string {
   if (role === "REQUESTER") {
-    return "Quản lý yêu cầu, nhu cầu cụ thể và tình nguyện viên đăng ký hỗ trợ.";
+    return "Manage your requests, specific needs, and volunteer applications.";
   }
 
   if (role === "VOLUNTEER") {
-    return "Tìm yêu cầu phù hợp, theo dõi đăng ký và cập nhật phần hỗ trợ của bạn.";
+    return "Find suitable requests, track applications, and update your contribution.";
   }
 
-  return "Duyệt yêu cầu, điều phối điểm hỗ trợ và theo dõi tiến độ thực hiện.";
+  return "Review requests, assign support locations, and track delivery progress.";
 }
 
 function MetricIcon() {
@@ -266,5 +266,5 @@ function MetricIcon() {
 }
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Không thể tải dashboard.";
+  return error instanceof Error ? error.message : "Unable to load the dashboard.";
 }

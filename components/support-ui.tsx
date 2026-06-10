@@ -69,7 +69,7 @@ export function AssignmentStatusBadge({
   );
 }
 
-export function LoadingBlock({ message = "Đang tải dữ liệu..." }) {
+export function LoadingBlock({ message = "Loading data..." }) {
   return (
     <div className="flex min-h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white">
       <div className="text-center">

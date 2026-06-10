@@ -1,4 +1,4 @@
-import type { AuthResponse } from "./api";
+import { refreshSession, type AuthResponse } from "./api";
 
 export type StoredSession = AuthResponse & {
   savedAt: number;
@@ -58,6 +58,25 @@ export function isAccessTokenExpired(
   skewMs = 30_000,
 ): boolean {
   return Date.now() + skewMs >= getAccessTokenExpiry(session);
+}
+
+export async function getValidSession(): Promise<StoredSession | null> {
+  const session = readSession();
+
+  if (!session) {
+    return null;
+  }
+
+  if (!isAccessTokenExpired(session)) {
+    return session;
+  }
+
+  try {
+    return saveSession(await refreshSession(session.refreshToken));
+  } catch {
+    clearSession();
+    return null;
+  }
 }
 
 function canUseStorage(): boolean {

@@ -1,0 +1,283 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState, type ReactNode } from "react";
+
+import { useAuth } from "@/components/auth-provider";
+import { ROLE_LABELS } from "@/lib/support-request-ui";
+
+const navigation = [
+  {
+    href: "/dashboard",
+    label: "Tổng quan",
+    icon: HomeIcon,
+  },
+  {
+    href: "/support-requests",
+    label: "Yêu cầu hỗ trợ",
+    icon: SupportIcon,
+  },
+];
+
+export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const { profile, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  return (
+    <div className="min-h-dvh bg-[#f4f6f2] text-slate-950">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-slate-200 bg-[#10261f] text-white lg:flex lg:flex-col">
+        <SidebarContent
+          pathname={pathname}
+          profileName={profile.fullName}
+          profileRole={ROLE_LABELS[profile.role]}
+          onLogout={logout}
+        />
+      </aside>
+
+      {mobileMenuOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Đóng menu"
+            className="absolute inset-0 bg-slate-950/45"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <aside className="relative flex h-full w-[min(86vw,320px)] flex-col bg-[#10261f] text-white shadow-2xl">
+            <SidebarContent
+              pathname={pathname}
+              profileName={profile.fullName}
+              profileRole={ROLE_LABELS[profile.role]}
+              onNavigate={() => setMobileMenuOpen(false)}
+              onLogout={logout}
+            />
+          </aside>
+        </div>
+      ) : null}
+
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              aria-label="Mở menu"
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex size-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700 lg:hidden"
+            >
+              <MenuIcon />
+            </button>
+            <div>
+              <p className="text-sm font-semibold text-slate-950">
+                {getPageTitle(pathname)}
+              </p>
+              <p className="hidden text-xs text-slate-500 sm:block">
+                Kết nối hỗ trợ minh bạch và đúng nhu cầu
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {profile.role === "REQUESTER" ? (
+              <Link
+                href="/support-requests/new"
+                className="hidden h-9 items-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800 sm:flex"
+              >
+                <PlusIcon />
+                Đăng yêu cầu
+              </Link>
+            ) : null}
+            <div className="flex size-9 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
+              {getInitials(profile.fullName)}
+            </div>
+          </div>
+        </header>
+
+        <main className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function SidebarContent({
+  pathname,
+  profileName,
+  profileRole,
+  onNavigate,
+  onLogout,
+}: {
+  pathname: string;
+  profileName: string;
+  profileRole: string;
+  onNavigate?: () => void;
+  onLogout: () => void;
+}) {
+  return (
+    <>
+      <div className="flex h-20 items-center gap-3 border-b border-white/10 px-6">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-400 text-lg font-black text-[#10261f]">
+          H
+        </div>
+        <div>
+          <p className="text-lg font-bold tracking-tight">HelpHub</p>
+          <p className="text-xs text-emerald-100/70">Cổng điều phối hỗ trợ</p>
+        </div>
+      </div>
+
+      <nav className="flex-1 space-y-1 px-3 py-6">
+        {navigation.map((item) => {
+          const active =
+            pathname === item.href ||
+            (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const Icon = item.icon;
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onNavigate}
+              className={`flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition ${
+                active
+                  ? "bg-emerald-400 text-[#10261f]"
+                  : "text-white/70 hover:bg-white/8 hover:text-white"
+              }`}
+            >
+              <Icon />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-white/10 p-4">
+        <div className="rounded-xl bg-white/6 p-3">
+          <p className="truncate text-sm font-semibold">{profileName}</p>
+          <p className="mt-0.5 truncate text-xs text-white/55">{profileRole}</p>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/12 text-xs font-semibold text-white/75 hover:bg-white/8 hover:text-white"
+          >
+            <LogoutIcon />
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function getPageTitle(pathname: string): string {
+  if (pathname === "/support-requests/new") {
+    return "Đăng yêu cầu hỗ trợ";
+  }
+
+  if (pathname.includes("/edit")) {
+    return "Chỉnh sửa yêu cầu";
+  }
+
+  if (pathname.startsWith("/support-requests/")) {
+    return "Chi tiết yêu cầu";
+  }
+
+  if (pathname.startsWith("/support-requests")) {
+    return "Yêu cầu hỗ trợ";
+  }
+
+  return "Tổng quan";
+}
+
+function getInitials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(-2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
+function HomeIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <path d="m3 10 9-7 9 7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 9.5V21h14V9.5M9 21v-7h6v7" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SupportIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <path
+        d="M12 21s-8-4.7-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.3-8 11-8 11Z"
+        strokeLinejoin="round"
+      />
+      <path d="M8.5 12h7M12 8.5v7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9" />
+    </svg>
+  );
+}

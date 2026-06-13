@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getPosts, PostSummaryResponse } from "@/lib/social-api";
 import { getValidSession } from "@/lib/session";
+import { SocialPostForm } from "@/components/social/social_post_form";
 import { SocialPostCard } from "@/components/social/social_post_card";
 
 export function SocialClient() {
@@ -11,44 +12,42 @@ export function SocialClient() {
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        let isMounted = true;
+    const [refreshKey, setRefreshKey] = useState(0);
 
-        async function fetchFeed() {
-            try {
-                const session = await getValidSession();
+    const fetchFeed = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const session = await getValidSession();
 
-                if (!session) {
-                    if (isMounted) {
-                        setError("Please log in to view the community feed.");
-                        setIsLoading(false);
-                    }
-                    return;
-                }
-
-                if (isMounted) setAccessToken(session.accessToken);
-
-                const data = await getPosts(session.accessToken);
-
-                if (isMounted) setPosts(data);
-            } catch (err: any) {
-                if (isMounted) setError(err.message || "Failed to load posts.");
-            } finally {
-                if (isMounted) setIsLoading(false);
+            if (!session) {
+                setError("Please log in to view the community feed.");
+                setIsLoading(false);
+                return;
             }
+
+            setAccessToken(session.accessToken);
+            const data = await getPosts(session.accessToken);
+
+            setPosts(data);
+        } catch (err: any) {
+            setError(err.message || "Failed to load posts.");
+        } finally {
+            setIsLoading(false);
         }
-
-        fetchFeed();
-
-        return () => {
-            isMounted = false;
-        };
     }, []);
 
-    if (isLoading) {
+    useEffect(() => {
+        fetchFeed();
+    }, [fetchFeed, refreshKey]);
+
+    const handlePostCreated = () => {
+        setRefreshKey((prev) => prev + 1);
+    };
+
+    if (isLoading && posts.length === 0) {
         return (
             <div className="flex justify-center items-center py-10">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
             </div>
         );
     }
@@ -63,24 +62,31 @@ export function SocialClient() {
 
     return (
         <div className="space-y-6">
-            {/* TODO: Add SocialPostForm here in the next step */}
+            {accessToken && (
+                <SocialPostForm
+                    accessToken={accessToken}
+                    onPostCreated={handlePostCreated}
+                />
+            )}
 
             {posts.length === 0 ? (
-                <p className="text-center text-gray-500 py-10 bg-gray-50 rounded-lg">
+                <p className="text-center text-gray-500 py-10 bg-white border border-gray-200 rounded-lg shadow-sm">
                     No posts available right now. Be the first to share
                     something!
                 </p>
             ) : (
-                posts.map(
-                    (post) =>
-                        accessToken && (
-                            <SocialPostCard
-                                key={post.id}
-                                post={post}
-                                accessToken={accessToken}
-                            />
-                        ),
-                )
+                <div className="space-y-4">
+                    {posts.map(
+                        (post) =>
+                            accessToken && (
+                                <SocialPostCard
+                                    key={post.id}
+                                    post={post}
+                                    accessToken={accessToken}
+                                />
+                            ),
+                    )}
+                </div>
             )}
         </div>
     );

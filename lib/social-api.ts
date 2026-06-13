@@ -284,3 +284,13 @@ export function updatePostComment(
         accessToken,
     );
 }
+
+export function getMyPosts(
+    accessToken: string,
+): Promise<PostSummaryResponse[]> {
+    return apiData<PostSummaryResponse[]>(
+        "/api/posts/my-posts",
+        { method: "GET" },
+        accessToken,
+    );
+}

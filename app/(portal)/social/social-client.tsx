@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getPosts, PostSummaryResponse } from "@/lib/social-api";
+import { getPosts, getMyPosts, PostSummaryResponse } from "@/lib/social-api";
 import { getValidSession } from "@/lib/session";
-import { SocialPostForm } from "@/components/social/social_post_form";
 import { SocialPostCard } from "@/components/social/social_post_card";
+import { SocialPostForm } from "@/components/social/social_post_form";
+
+type TabType = "ALL" | "MY_POSTS";
 
 export function SocialClient() {
     const [posts, setPosts] = useState<PostSummaryResponse[]>([]);
@@ -13,9 +15,11 @@ export function SocialClient() {
     const [error, setError] = useState<string | null>(null);
 
     const [refreshKey, setRefreshKey] = useState(0);
+    const [activeTab, setActiveTab] = useState<TabType>("ALL");
 
     const fetchFeed = useCallback(async () => {
         setIsLoading(true);
+        setError(null);
         try {
             const session = await getValidSession();
 
@@ -26,7 +30,11 @@ export function SocialClient() {
             }
 
             setAccessToken(session.accessToken);
-            const data = await getPosts(session.accessToken);
+
+            const data =
+                activeTab === "ALL"
+                    ? await getPosts(session.accessToken)
+                    : await getMyPosts(session.accessToken);
 
             setPosts(data);
         } catch (err: any) {
@@ -34,7 +42,7 @@ export function SocialClient() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [activeTab]);
 
     useEffect(() => {
         fetchFeed();
@@ -42,9 +50,10 @@ export function SocialClient() {
 
     const handlePostCreated = () => {
         setRefreshKey((prev) => prev + 1);
+        setActiveTab("ALL");
     };
 
-    const handlePostDeleted = () => {
+    const handlePostRefresh = () => {
         setRefreshKey((prev) => prev + 1);
     };
 
@@ -52,14 +61,6 @@ export function SocialClient() {
         return (
             <div className="flex justify-center items-center py-10">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="p-4 bg-red-50 text-red-600 rounded-md text-center">
-                {error}
             </div>
         );
     }
@@ -73,10 +74,38 @@ export function SocialClient() {
                 />
             )}
 
-            {posts.length === 0 ? (
+            <div className="flex items-center gap-4 border-b border-gray-200">
+                <button
+                    onClick={() => setActiveTab("ALL")}
+                    className={`py-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === "ALL"
+                            ? "border-emerald-600 text-emerald-600"
+                            : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                    Community Feed
+                </button>
+                <button
+                    onClick={() => setActiveTab("MY_POSTS")}
+                    className={`py-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === "MY_POSTS"
+                            ? "border-emerald-600 text-emerald-600"
+                            : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                    My Posts
+                </button>
+            </div>
+
+            {error ? (
+                <div className="p-4 bg-red-50 text-red-600 rounded-md text-center">
+                    {error}
+                </div>
+            ) : posts.length === 0 ? (
                 <p className="text-center text-gray-500 py-10 bg-white border border-gray-200 rounded-lg shadow-sm">
-                    No posts available right now. Be the first to share
-                    something!
+                    {activeTab === "ALL"
+                        ? "No posts available right now. Be the first to share something!"
+                        : "You haven't posted anything yet."}
                 </p>
             ) : (
                 <div className="space-y-4">
@@ -87,7 +116,7 @@ export function SocialClient() {
                                     key={post.id}
                                     post={post}
                                     accessToken={accessToken}
-                                    onDelete={handlePostDeleted}
+                                    onDelete={handlePostRefresh}
                                 />
                             ),
                     )}

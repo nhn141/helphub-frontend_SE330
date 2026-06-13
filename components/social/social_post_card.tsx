@@ -11,15 +11,23 @@ import {
     getMyReaction,
     reactToPost,
     removeReaction,
+    deletePost,
 } from "@/lib/social-api";
 import { SocialCommentSection } from "./social_comment_section";
+import { useAuth } from "../auth-provider";
 
 interface SocialPostCardProps {
     post: PostSummaryResponse;
     accessToken: string;
+    onDelete?: () => void;
 }
 
-export function SocialPostCard({ post, accessToken }: SocialPostCardProps) {
+export function SocialPostCard({
+    post,
+    accessToken,
+    onDelete,
+}: SocialPostCardProps) {
+    const { profile } = useAuth();
     const [media, setMedia] = useState<PostMedia[]>([]);
     const [reactionCount, setReactionCount] = useState<ReactionCount | null>(
         null,
@@ -29,6 +37,9 @@ export function SocialPostCard({ post, accessToken }: SocialPostCardProps) {
 
     const [isLoadingExtras, setIsLoadingExtras] = useState(true);
     const [isReacting, setIsReacting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const isAuthor = profile?.id === post.authorId;
 
     useEffect(() => {
         let isMounted = true;
@@ -119,6 +130,23 @@ export function SocialPostCard({ post, accessToken }: SocialPostCardProps) {
         }
     };
 
+    const handleDelete = async () => {
+        const confirmDelete = window.confirm(
+            "Are you sure you want to delete this post?",
+        );
+        if (!confirmDelete) return;
+
+        setIsDeleting(true);
+        try {
+            await deletePost(accessToken, post.id);
+            if (onDelete) onDelete();
+        } catch (error: any) {
+            console.error("Failed to delete post:", error);
+            alert("Failed to delete post. Please try again.");
+            setIsDeleting(false);
+        }
+    };
+
     return (
         <div className="p-4 bg-white border rounded-lg shadow-sm">
             <div className="flex items-center gap-3 mb-3">
@@ -150,6 +178,17 @@ export function SocialPostCard({ post, accessToken }: SocialPostCardProps) {
                         {post.visibility === "PUBLIC" ? "Public" : "Volunteers"}
                     </p>
                 </div>
+
+                {isAuthor && (
+                    <button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        title="Delete post"
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition disabled:opacity-50"
+                    >
+                        <TrashIcon />
+                    </button>
+                )}
             </div>
 
             <p className="text-gray-800 whitespace-pre-wrap mb-3">
@@ -246,6 +285,25 @@ function CommentIcon() {
             strokeLinejoin="round"
         >
             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+        </svg>
+    );
+}
+
+function TrashIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M3 6h18" />
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
         </svg>
     );
 }

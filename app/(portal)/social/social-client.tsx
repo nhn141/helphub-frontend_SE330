@@ -44,6 +44,10 @@ export function SocialClient() {
         setRefreshKey((prev) => prev + 1);
     };
 
+    const handlePostDeleted = () => {
+        setRefreshKey((prev) => prev + 1);
+    };
+
     if (isLoading && posts.length === 0) {
         return (
             <div className="flex justify-center items-center py-10">
@@ -83,6 +87,7 @@ export function SocialClient() {
                                     key={post.id}
                                     post={post}
                                     accessToken={accessToken}
+                                    onDelete={handlePostDeleted}
                                 />
                             ),
                     )}

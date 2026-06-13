@@ -12,6 +12,7 @@ import {
     reactToPost,
     removeReaction,
 } from "@/lib/social-api";
+import { SocialCommentSection } from "./social_comment_section";
 
 interface SocialPostCardProps {
     post: PostSummaryResponse;
@@ -24,6 +25,7 @@ export function SocialPostCard({ post, accessToken }: SocialPostCardProps) {
         null,
     );
     const [myReaction, setMyReaction] = useState<PostReactionType | null>(null);
+    const [showComments, setShowComments] = useState(false);
 
     const [isLoadingExtras, setIsLoadingExtras] = useState(true);
     const [isReacting, setIsReacting] = useState(false);
@@ -192,12 +194,24 @@ export function SocialPostCard({ post, accessToken }: SocialPostCardProps) {
                         <LikeIcon isActive={!!myReaction} />
                         Like
                     </button>
-                    <button className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md font-medium text-gray-600 hover:bg-gray-50 transition">
+                    <button
+                        onClick={() => setShowComments(!showComments)}
+                        className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md font-medium transition hover:bg-gray-50
+    ${showComments ? "text-emerald-600 bg-emerald-50" : "text-gray-600"}
+  `}
+                    >
                         <CommentIcon />
                         Comment
                     </button>
                 </div>
             </div>
+
+            {showComments && (
+                <SocialCommentSection
+                    postId={post.id}
+                    accessToken={accessToken}
+                />
+            )}
         </div>
     );
 }

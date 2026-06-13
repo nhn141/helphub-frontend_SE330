@@ -228,3 +228,29 @@ export function getPostComments(
         accessToken,
     );
 }
+
+export function createPostComment(
+    accessToken: string,
+    postId: string,
+    payload: { content: string; parentCommentId: string | null },
+): Promise<PostComment> {
+    return apiData<PostComment>(
+        `/api/v1/posts/${encodeURIComponent(postId)}/comments`,
+        {
+            method: "POST",
+            body: JSON.stringify(payload),
+        },
+        accessToken,
+    );
+}
+
+export function deletePostComment(
+    accessToken: string,
+    commentId: string,
+): Promise<void> {
+    return apiData<void>(
+        `/api/v1/comments/${encodeURIComponent(commentId)}`,
+        { method: "DELETE" },
+        accessToken,
+    );
+}

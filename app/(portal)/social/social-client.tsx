@@ -4,6 +4,12 @@ import { useEffect, useState, useCallback } from "react";
 import { getPosts, getMyPosts, PostSummaryResponse } from "@/lib/social-api";
 import { getValidSession } from "@/lib/session";
 import { SocialPostCard } from "@/components/social/social_post_card";
+import {
+    EmptyState,
+    LoadingBlock,
+    Notice,
+    PageHeading,
+} from "@/components/support-ui";
 import { SocialPostForm } from "@/components/social/social_post_form";
 
 type TabType = "ALL" | "MY_POSTS";
@@ -17,7 +23,7 @@ export function SocialClient() {
     const [refreshKey, setRefreshKey] = useState(0);
     const [activeTab, setActiveTab] = useState<TabType>("ALL");
 
-    const fetchFeed = useCallback(async () => {
+    const loadData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
@@ -45,8 +51,12 @@ export function SocialClient() {
     }, [activeTab]);
 
     useEffect(() => {
-        fetchFeed();
-    }, [fetchFeed, refreshKey]);
+        const timer = window.setTimeout(() => {
+            void loadData();
+        }, 0);
+
+        return () => window.clearTimeout(timer);
+    }, [loadData, refreshKey]);
 
     const handlePostCreated = () => {
         setRefreshKey((prev) => prev + 1);
@@ -57,71 +67,95 @@ export function SocialClient() {
         setRefreshKey((prev) => prev + 1);
     };
 
-    if (isLoading && posts.length === 0) {
-        return (
-            <div className="flex justify-center items-center py-10">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-6">
-            {accessToken && (
-                <SocialPostForm
-                    accessToken={accessToken}
-                    onPostCreated={handlePostCreated}
-                />
-            )}
+            {/* 1. Header nhất quán với các trang khác */}
+            <PageHeading
+                eyebrow="Community"
+                title="Social Feed"
+                description="Share updates, coordinate efforts, and stay connected with the community."
+            />
+            <div className="mx-auto max-w-3xl space-y-6">
+                {/* 2. Hiển thị Lỗi chuẩn UI */}
+                {error ? (
+                    <Notice type="error">
+                        {error}{" "}
+                        <button
+                            type="button"
+                            className="font-semibold underline"
+                            onClick={() => void loadData()}
+                        >
+                            Try again
+                        </button>
+                    </Notice>
+                ) : null}
 
-            <div className="flex items-center gap-4 border-b border-gray-200">
-                <button
-                    onClick={() => setActiveTab("ALL")}
-                    className={`py-2 px-1 text-sm font-medium border-b-2 transition-colors ${
-                        activeTab === "ALL"
-                            ? "border-emerald-600 text-emerald-600"
-                            : "border-transparent text-gray-500 hover:text-gray-700"
-                    }`}
-                >
-                    Community Feed
-                </button>
-                <button
-                    onClick={() => setActiveTab("MY_POSTS")}
-                    className={`py-2 px-1 text-sm font-medium border-b-2 transition-colors ${
-                        activeTab === "MY_POSTS"
-                            ? "border-emerald-600 text-emerald-600"
-                            : "border-transparent text-gray-500 hover:text-gray-700"
-                    }`}
-                >
-                    My Posts
-                </button>
+                {/* 3. Thanh điều hướng Tabs (Sử dụng pill design chuẩn) */}
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                    <div className="inline-flex rounded-xl bg-slate-100 p-1">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab("ALL")}
+                            className={tabClassName(activeTab === "ALL")}
+                        >
+                            Community Feed
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab("MY_POSTS")}
+                            className={tabClassName(activeTab === "MY_POSTS")}
+                        >
+                            My Posts
+                        </button>
+                    </div>
+                </section>
+
+                {accessToken && (
+                    <SocialPostForm
+                        accessToken={accessToken}
+                        onPostCreated={handlePostCreated}
+                    />
+                )}
+
+                {isLoading ? (
+                    <LoadingBlock />
+                ) : posts.length === 0 ? (
+                    <EmptyState
+                        title={
+                            activeTab === "ALL"
+                                ? "No posts available"
+                                : "You haven't posted anything yet"
+                        }
+                        description={
+                            activeTab === "ALL"
+                                ? "Be the first to share something with the community!"
+                                : "Share your updates and needs with the community."
+                        }
+                    />
+                ) : (
+                    <div className="space-y-4">
+                        {posts.map(
+                            (post) =>
+                                accessToken && (
+                                    <SocialPostCard
+                                        key={post.id}
+                                        post={post}
+                                        accessToken={accessToken}
+                                        onDelete={handlePostRefresh}
+                                    />
+                                ),
+                        )}
+                    </div>
+                )}
             </div>
-
-            {error ? (
-                <div className="p-4 bg-red-50 text-red-600 rounded-md text-center">
-                    {error}
-                </div>
-            ) : posts.length === 0 ? (
-                <p className="text-center text-gray-500 py-10 bg-white border border-gray-200 rounded-lg shadow-sm">
-                    {activeTab === "ALL"
-                        ? "No posts available right now. Be the first to share something!"
-                        : "You haven't posted anything yet."}
-                </p>
-            ) : (
-                <div className="space-y-4">
-                    {posts.map(
-                        (post) =>
-                            accessToken && (
-                                <SocialPostCard
-                                    key={post.id}
-                                    post={post}
-                                    accessToken={accessToken}
-                                    onDelete={handlePostRefresh}
-                                />
-                            ),
-                    )}
-                </div>
-            )}
         </div>
     );
+}
+
+function tabClassName(active: boolean): string {
+    return `h-9 rounded-lg px-4 text-sm font-semibold transition ${
+        active
+            ? "bg-white text-emerald-800 shadow-sm"
+            : "text-slate-500 hover:text-slate-800"
+    }`;
 }

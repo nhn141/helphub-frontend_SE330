@@ -92,7 +92,7 @@ export function SocialPostForm({
     return (
         <form
             onSubmit={handleSubmit}
-            className="p-4 mb-6 bg-white border rounded-lg shadow-sm"
+            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
         >
             <div className="mb-3">
                 <textarea

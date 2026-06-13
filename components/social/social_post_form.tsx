@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPost, PostVisibility } from "@/lib/social-api";
+import { useAuth } from "@/components/auth-provider";
+import {
+    getMySupportRequests,
+    getSupportRequests,
+    SupportRequestSummary,
+} from "@/lib/api";
 
 interface SocialPostFormProps {
     accessToken: string;
@@ -12,10 +18,51 @@ export function SocialPostForm({
     accessToken,
     onPostCreated,
 }: SocialPostFormProps) {
+    const { profile } = useAuth();
     const [content, setContent] = useState("");
     const [visibility, setVisibility] = useState<PostVisibility>("PUBLIC");
+    const [supportRequestId, setSupportRequestId] = useState<string>("");
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const [availableRequests, setAvailableRequests] = useState<
+        SupportRequestSummary[]
+    >([]);
+    const [isLoadingRequests, setIsLoadingRequests] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        async function fetchRequests() {
+            if (!profile) return;
+            setIsLoadingRequests(true);
+            try {
+                let requests: SupportRequestSummary[] = [];
+
+                if (profile.role === "REQUESTER") {
+                    requests = await getMySupportRequests(accessToken);
+                } else {
+                    requests = await getSupportRequests(accessToken);
+                }
+
+                const validStatuses = ["APPROVED", "IN_PROGRESS", "COMPLETED"];
+                const validRequests = requests.filter((req) =>
+                    validStatuses.includes(req.status),
+                );
+
+                if (isMounted) setAvailableRequests(validRequests);
+            } catch (err) {
+                console.error("Failed to fetch support requests:", err);
+            } finally {
+                if (isMounted) setIsLoadingRequests(false);
+            }
+        }
+
+        fetchRequests();
+        return () => {
+            isMounted = false;
+        };
+    }, [profile, accessToken]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,12 +75,12 @@ export function SocialPostForm({
             await createPost(accessToken, {
                 content: content.trim(),
                 visibility,
-                supportRequestId: null,
+                supportRequestId: supportRequestId ? supportRequestId : null,
             });
 
             setContent("");
             setVisibility("PUBLIC");
-
+            setSupportRequestId("");
             onPostCreated();
         } catch (err: any) {
             setError(err.message || "Failed to create post. Please try again.");
@@ -68,29 +115,37 @@ export function SocialPostForm({
                 </div>
             )}
 
-            <div className="flex items-center justify-between border-t pt-3">
-                <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md transition"
-                        disabled={isSubmitting}
-                        onClick={() =>
-                            alert("Media upload feature coming soon!")
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t pt-3 gap-3">
+                <div className="flex-1 max-w-sm">
+                    <select
+                        value={supportRequestId}
+                        onChange={(e) => setSupportRequestId(e.target.value)}
+                        disabled={
+                            isSubmitting ||
+                            isLoadingRequests ||
+                            availableRequests.length === 0
                         }
+                        className="w-full text-xs sm:text-sm border-gray-300 rounded-md text-gray-700 bg-gray-50 focus:bg-white shadow-sm focus:border-emerald-500 focus:ring-emerald-500 py-1.5 pl-2 pr-8 truncate"
                     >
-                        <PhotoIcon />
-                        Photo/Video
-                    </button>
+                        <option value="">
+                            -- Attach a Support Request (Optional) --
+                        </option>
+                        {availableRequests.map((req) => (
+                            <option key={req.id} value={req.id}>
+                                {req.title} ({req.status})
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     <select
                         value={visibility}
                         onChange={(e) =>
                             setVisibility(e.target.value as PostVisibility)
                         }
                         disabled={isSubmitting}
-                        className="text-sm border-gray-300 rounded-md text-gray-700 bg-white shadow-sm focus:border-emerald-500 focus:ring-emerald-500 py-1.5 pl-3 pr-8"
+                        className="text-xs sm:text-sm border-gray-300 rounded-md text-gray-700 bg-white shadow-sm focus:border-emerald-500 focus:ring-emerald-500 py-1.5 pl-2 pr-6"
                     >
                         <option value="PUBLIC">Public</option>
                         <option value="VOLUNTEERS_ONLY">Volunteers Only</option>
@@ -99,31 +154,12 @@ export function SocialPostForm({
                     <button
                         type="submit"
                         disabled={!content.trim() || isSubmitting}
-                        className="px-4 py-1.5 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        className="px-4 py-1.5 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition whitespace-nowrap"
                     >
                         {isSubmitting ? "Posting..." : "Post"}
                     </button>
                 </div>
             </div>
         </form>
-    );
-}
-
-function PhotoIcon() {
-    return (
-        <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-            <circle cx="8.5" cy="8.5" r="1.5" />
-            <polyline points="21 15 16 10 5 21" />
-        </svg>
     );
 }

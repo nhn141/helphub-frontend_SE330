@@ -290,6 +290,17 @@ export function SocialPostCard({
                 </p>
             )}
 
+            {post.supportRequestId &&
+                post.supportRequestTitle &&
+                !isEditing && (
+                    <div className="mb-2">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                            <LinkIcon />
+                            Campaign: {post.supportRequestTitle}
+                        </span>
+                    </div>
+                )}
+
             {isLoadingExtras ? (
                 <div className="animate-pulse h-8 bg-gray-50 rounded-md mb-3 w-1/3"></div>
             ) : (
@@ -417,6 +428,24 @@ function EditIcon() {
             strokeLinejoin="round"
         >
             <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+        </svg>
+    );
+}
+
+function LinkIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
         </svg>
     );
 }

@@ -12,6 +12,8 @@ import {
     reactToPost,
     removeReaction,
     deletePost,
+    PostVisibility,
+    updatePost,
 } from "@/lib/social-api";
 import { SocialCommentSection } from "./social_comment_section";
 import { useAuth } from "../auth-provider";
@@ -38,6 +40,13 @@ export function SocialPostCard({
     const [isLoadingExtras, setIsLoadingExtras] = useState(true);
     const [isReacting, setIsReacting] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(post.content);
+    const [editVisibility, setEditVisibility] = useState<PostVisibility>(
+        post.visibility,
+    );
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const isAuthor = profile?.id === post.authorId;
 
@@ -147,6 +156,33 @@ export function SocialPostCard({
         }
     };
 
+    const handleUpdate = async () => {
+        if (
+            !editContent.trim() ||
+            (editContent === post.content && editVisibility === post.visibility)
+        ) {
+            setIsEditing(false);
+            return;
+        }
+
+        setIsUpdating(true);
+        try {
+            await updatePost(accessToken, post.id, {
+                content: editContent.trim(),
+                visibility: editVisibility,
+                supportRequestId: post.supportRequestId,
+            });
+
+            if (onDelete) onDelete();
+            setIsEditing(false);
+        } catch (error: any) {
+            console.error("Failed to update post:", error);
+            alert("Failed to update post. Please try again.");
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
     return (
         <div className="p-4 bg-white border rounded-lg shadow-sm">
             <div className="flex items-center gap-3 mb-3">
@@ -180,20 +216,79 @@ export function SocialPostCard({
                 </div>
 
                 {isAuthor && (
-                    <button
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        title="Delete post"
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition disabled:opacity-50"
-                    >
-                        <TrashIcon />
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setIsEditing(!isEditing)}
+                            disabled={isDeleting || isUpdating}
+                            title="Edit post"
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition disabled:opacity-50"
+                        >
+                            <EditIcon />
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            disabled={isDeleting || isUpdating}
+                            title="Delete post"
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition disabled:opacity-50"
+                        >
+                            <TrashIcon />
+                        </button>
+                    </div>
                 )}
             </div>
 
-            <p className="text-gray-800 whitespace-pre-wrap mb-3">
-                {post.content}
-            </p>
+            {isEditing ? (
+                <div className="mb-3 space-y-2">
+                    <textarea
+                        className="w-full p-3 text-sm border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white resize-none"
+                        rows={3}
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        disabled={isUpdating}
+                    />
+                    <div className="flex items-center justify-between">
+                        <select
+                            value={editVisibility}
+                            onChange={(e) =>
+                                setEditVisibility(
+                                    e.target.value as PostVisibility,
+                                )
+                            }
+                            disabled={isUpdating}
+                            className="text-xs border-gray-300 rounded-md text-gray-700 bg-white shadow-sm py-1.5 pl-2 pr-6"
+                        >
+                            <option value="PUBLIC">Public</option>
+                            <option value="VOLUNTEERS_ONLY">
+                                Volunteers Only
+                            </option>
+                        </select>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    setIsEditing(false);
+                                    setEditContent(post.content);
+                                    setEditVisibility(post.visibility);
+                                }}
+                                disabled={isUpdating}
+                                className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleUpdate}
+                                disabled={isUpdating || !editContent.trim()}
+                                className="px-3 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700"
+                            >
+                                {isUpdating ? "Saving..." : "Save"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <p className="text-gray-800 whitespace-pre-wrap mb-3">
+                    {post.content}
+                </p>
+            )}
 
             {isLoadingExtras ? (
                 <div className="animate-pulse h-8 bg-gray-50 rounded-md mb-3 w-1/3"></div>
@@ -304,6 +399,23 @@ function TrashIcon() {
             <path d="M3 6h18" />
             <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
             <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+        </svg>
+    );
+}
+
+function EditIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
         </svg>
     );
 }

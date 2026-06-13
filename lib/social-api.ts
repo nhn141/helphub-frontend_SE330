@@ -254,3 +254,18 @@ export function deletePostComment(
         accessToken,
     );
 }
+
+export function updatePost(
+    accessToken: string,
+    postId: string,
+    payload: PostPayload,
+): Promise<PostSummaryResponse> {
+    return apiData<PostSummaryResponse>(
+        `/api/posts/${encodeURIComponent(postId)}`,
+        {
+            method: "PUT",
+            body: JSON.stringify(payload),
+        },
+        accessToken,
+    );
+}

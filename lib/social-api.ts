@@ -192,6 +192,32 @@ export function reactToPost(
     );
 }
 
+export function removeReaction(
+    accessToken: string,
+    postId: string,
+): Promise<void> {
+    return apiData<void>(
+        `/api/v1/posts/${encodeURIComponent(postId)}/reactions`,
+        { method: "DELETE" },
+        accessToken,
+    );
+}
+
+export function updateReaction(
+    accessToken: string,
+    postId: string,
+    type: PostReactionType,
+): Promise<void> {
+    return apiData<void>(
+        `/api/v1/posts/${encodeURIComponent(postId)}/reactions`,
+        {
+            method: "PATCH",
+            body: JSON.stringify({ type }),
+        },
+        accessToken,
+    );
+}
+
 export function getPostComments(
     accessToken: string,
     postId: string,

@@ -344,6 +344,7 @@ export function SocialPostCard({
                 <SocialCommentSection
                     postId={post.id}
                     accessToken={accessToken}
+                    postAuthorId={post.authorId}
                 />
             )}
         </div>

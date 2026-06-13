@@ -269,3 +269,18 @@ export function updatePost(
         accessToken,
     );
 }
+
+export function updatePostComment(
+    accessToken: string,
+    commentId: string,
+    payload: { content: string },
+): Promise<PostComment> {
+    return apiData<PostComment>(
+        `/api/v1/comments/${encodeURIComponent(commentId)}`,
+        {
+            method: "PATCH",
+            body: JSON.stringify(payload),
+        },
+        accessToken,
+    );
+}

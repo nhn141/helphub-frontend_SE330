@@ -10,8 +10,6 @@ import {
 } from "@/components/support-ui";
 import { SupportRequestFilters } from "@/components/admin/support-request-filters";
 import { SupportRequestTable } from "@/components/admin/support-request-table";
-
-// Sửa lại đường dẫn import đúng cho các type chung
 import { SupportRequestSummary, SupportRequestStatus } from "@/lib/api";
 
 import {

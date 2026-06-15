@@ -34,3 +34,67 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+```
+helphub-frontend_SE330
+├─ AGENTS.md
+├─ app
+│  ├─ (portal)
+│  │  ├─ dashboard
+│  │  │  ├─ dashboard-client.tsx
+│  │  │  └─ page.tsx
+│  │  ├─ layout.tsx
+│  │  ├─ social
+│  │  │  ├─ page.tsx
+│  │  │  └─ social-client.tsx
+│  │  └─ support-requests
+│  │     ├─ new
+│  │     │  ├─ new-support-request-client.tsx
+│  │     │  └─ page.tsx
+│  │     ├─ page.tsx
+│  │     ├─ support-requests-client.tsx
+│  │     └─ [id]
+│  │        ├─ edit
+│  │        │  ├─ edit-support-request-client.tsx
+│  │        │  └─ page.tsx
+│  │        ├─ page.tsx
+│  │        └─ support-request-detail-client.tsx
+│  ├─ auth-client.tsx
+│  ├─ favicon.ico
+│  ├─ globals.css
+│  ├─ layout.tsx
+│  └─ page.tsx
+├─ CLAUDE.md
+├─ components
+│  ├─ app-shell.tsx
+│  ├─ auth-provider.tsx
+│  ├─ social
+│  │  ├─ social_comment_section.tsx
+│  │  ├─ social_post_card.tsx
+│  │  └─ social_post_form.tsx
+│  ├─ support-needs-section.tsx
+│  ├─ support-request-card.tsx
+│  ├─ support-request-form.tsx
+│  ├─ support-ui.tsx
+│  └─ volunteer-assignments-section.tsx
+├─ eslint.config.mjs
+├─ lib
+│  ├─ api.ts
+│  ├─ session.ts
+│  ├─ social-api.ts
+│  └─ support-request-ui.ts
+├─ next.config.ts
+├─ package-lock.json
+├─ package.json
+├─ postcss.config.mjs
+├─ public
+│  ├─ file.svg
+│  ├─ globe.svg
+│  ├─ helphub-auth-hero.png
+│  ├─ next.svg
+│  ├─ vercel.svg
+│  └─ window.svg
+├─ README.md
+└─ tsconfig.json
+
+```

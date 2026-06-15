@@ -17,6 +17,7 @@ import {
 } from "@/lib/social-api";
 import { SocialCommentSection } from "./social_comment_section";
 import { useAuth } from "../auth-provider";
+import { ReportModal } from "../report-modal";
 
 interface SocialPostCardProps {
     post: PostSummaryResponse;
@@ -47,6 +48,7 @@ export function SocialPostCard({
         post.visibility,
     );
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     const isAuthor = profile?.id === post.authorId;
 
@@ -215,8 +217,8 @@ export function SocialPostCard({
                     </p>
                 </div>
 
-                {isAuthor && (
-                    <div className="flex items-center gap-1">
+                {isAuthor ? (
+                    <>
                         <button
                             onClick={() => setIsEditing(!isEditing)}
                             disabled={isDeleting || isUpdating}
@@ -233,7 +235,15 @@ export function SocialPostCard({
                         >
                             <TrashIcon />
                         </button>
-                    </div>
+                    </>
+                ) : (
+                    <button
+                        onClick={() => setIsReportModalOpen(true)}
+                        title="Report post"
+                        className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition"
+                    >
+                        <FlagIcon />
+                    </button>
                 )}
             </div>
 
@@ -358,6 +368,14 @@ export function SocialPostCard({
                     postAuthorId={post.authorId}
                 />
             )}
+
+            <ReportModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                targetId={post.id}
+                targetType="POST"
+                title={`Post by ${post.authorName}`}
+            />
         </div>
     );
 }
@@ -446,6 +464,24 @@ function LinkIcon() {
         >
             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+    );
+}
+
+function FlagIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+            <line x1="4" y1="22" x2="4" y2="15" />
         </svg>
     );
 }

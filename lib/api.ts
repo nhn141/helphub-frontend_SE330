@@ -140,6 +140,13 @@ export type SupportNeedContribution = {
     createdAt: string;
 };
 
+export type CreateReportPayload = {
+    targetType: "POST" | "SUPPORT_REQUEST" | "USER";
+    targetId: string;
+    reason: string;
+    description?: string;
+};
+
 export type VolunteerAssignmentStatus =
     | "PENDING"
     | "ACCEPTED"
@@ -556,6 +563,20 @@ export function completeVolunteerAssignment(
     return apiData<VolunteerAssignment>(
         `/api/v1/volunteer-assignments/support-requests/${encodeURIComponent(supportRequestId)}/complete`,
         { method: "PATCH" },
+        accessToken,
+    );
+}
+
+export function createReport(
+    accessToken: string,
+    payload: CreateReportPayload,
+): Promise<any> {
+    return apiData<any>(
+        "/api/reports",
+        {
+            method: "POST",
+            body: JSON.stringify(payload),
+        },
         accessToken,
     );
 }

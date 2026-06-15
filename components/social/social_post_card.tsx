@@ -316,16 +316,40 @@ export function SocialPostCard({
             ) : (
                 media.length > 0 && (
                     <div
-                        className={`grid gap-2 mb-3 ${media.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
+                        className={`grid gap-2 mb-3 ${
+                            media.length === 1 ? "grid-cols-1" : "grid-cols-2"
+                        }`}
                     >
-                        {media.map((item) => (
-                            <img
-                                key={item.id}
-                                src={item.fileUrl}
-                                alt={item.fileName}
-                                className="w-full h-auto max-h-64 object-cover rounded-md border"
-                            />
-                        ))}
+                        {media.map((item, index) => {
+                            // Class chung cho ảnh: Không cắt (object-contain), nền xám nhạt che khoảng trống
+                            let imgClass =
+                                "w-full object-contain bg-slate-50 transition duration-300 hover:opacity-90 cursor-pointer rounded-xl border border-slate-100 ";
+
+                            if (media.length === 1) {
+                                // 1 ảnh: Chiều cao tự động ôm theo ảnh, nhưng tối đa chỉ 500px để không choán hết màn hình
+                                imgClass += "h-auto max-h-[500px]";
+                            } else {
+                                // 2, 3, 4 ảnh: Cố định chiều cao các ô grid (VD: 224px) để tạo lưới đều nhau, ảnh tự động thu gọn vào trong
+                                imgClass += "h-56";
+                            }
+
+                            return (
+                                <img
+                                    key={
+                                        item.id
+                                            ? `${item.id}-${index}`
+                                            : `media-${index}`
+                                    }
+                                    src={item.fileUrl}
+                                    alt={
+                                        item.fileName ||
+                                        `Post attached image ${index + 1}`
+                                    }
+                                    className={imgClass}
+                                    loading="lazy"
+                                />
+                            );
+                        })}
                     </div>
                 )
             )}

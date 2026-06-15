@@ -104,7 +104,7 @@ export function AdminDashboardClient() {
                     <StatCard title="Users Overview">
                         <div className="flex items-end gap-2 mb-4">
                             <span className="text-4xl font-black text-slate-800">
-                                {userStats.total}
+                                {userStats.total || 0}
                             </span>
                             <span className="text-sm font-medium text-slate-500 mb-1">
                                 total accounts
@@ -114,13 +114,13 @@ export function AdminDashboardClient() {
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-600">Active</span>
                                 <span className="font-semibold text-emerald-600">
-                                    {userStats.active}
+                                    {userStats.active || 0}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm border-b pb-2">
                                 <span className="text-slate-600">Inactive</span>
                                 <span className="font-semibold text-rose-600">
-                                    {userStats.inactive}
+                                    {userStats.inactive || 0}
                                 </span>
                             </div>
                             <div className="pt-1">
@@ -131,25 +131,26 @@ export function AdminDashboardClient() {
                                     <div>
                                         REQ:{" "}
                                         <span className="font-bold">
-                                            {userStats.byRole.REQUESTER || 0}
+                                            {userStats.byRole?.REQUESTER || 0}
                                         </span>
                                     </div>
                                     <div>
                                         VOL:{" "}
                                         <span className="font-bold">
-                                            {userStats.byRole.VOLUNTEER || 0}
+                                            {userStats.byRole?.VOLUNTEER || 0}
                                         </span>
                                     </div>
                                     <div>
                                         COL:{" "}
                                         <span className="font-bold">
-                                            {userStats.byRole.COLLABORATOR || 0}
+                                            {userStats.byRole?.COLLABORATOR ||
+                                                0}
                                         </span>
                                     </div>
                                     <div>
                                         ADM:{" "}
                                         <span className="font-bold">
-                                            {userStats.byRole.ADMIN || 0}
+                                            {userStats.byRole?.ADMIN || 0}
                                         </span>
                                     </div>
                                 </div>
@@ -162,7 +163,7 @@ export function AdminDashboardClient() {
                     <StatCard title="Support Requests">
                         <div className="flex items-end gap-2 mb-4">
                             <span className="text-4xl font-black text-slate-800">
-                                {requestStats.total}
+                                {requestStats.total || 0}
                             </span>
                             <span className="text-sm font-medium text-slate-500 mb-1">
                                 total requests
@@ -172,25 +173,25 @@ export function AdminDashboardClient() {
                             <div className="flex justify-between items-center bg-amber-50 px-2 py-1.5 rounded text-amber-800">
                                 <span>Pending Approval</span>
                                 <span className="font-bold">
-                                    {requestStats.byStatus.PENDING || 0}
+                                    {requestStats.byStatus?.PENDING || 0}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center bg-emerald-50 px-2 py-1.5 rounded text-emerald-800">
                                 <span>Approved</span>
                                 <span className="font-bold">
-                                    {requestStats.byStatus.APPROVED || 0}
+                                    {requestStats.byStatus?.APPROVED || 0}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center bg-blue-50 px-2 py-1.5 rounded text-blue-800">
                                 <span>In Progress</span>
                                 <span className="font-bold">
-                                    {requestStats.byStatus.IN_PROGRESS || 0}
+                                    {requestStats.byStatus?.IN_PROGRESS || 0}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center bg-slate-50 px-2 py-1.5 rounded text-slate-600">
                                 <span>Completed</span>
                                 <span className="font-bold">
-                                    {requestStats.byStatus.COMPLETED || 0}
+                                    {requestStats.byStatus?.COMPLETED || 0}
                                 </span>
                             </div>
                         </div>
@@ -201,7 +202,7 @@ export function AdminDashboardClient() {
                     <StatCard title="Reports & Flags">
                         <div className="flex items-end gap-2 mb-4">
                             <span className="text-4xl font-black text-slate-800">
-                                {reportStats.total}
+                                {reportStats.total || 0}
                             </span>
                             <span className="text-sm font-medium text-slate-500 mb-1">
                                 total reports
@@ -211,7 +212,7 @@ export function AdminDashboardClient() {
                         <div className="flex gap-2 mb-4">
                             <div className="flex-1 bg-rose-100/50 border border-rose-200 rounded-lg p-2 text-center">
                                 <span className="block text-xl font-bold text-rose-700">
-                                    {reportStats.byStatus.pending || 0}
+                                    {reportStats.byStatus?.pending || 0}
                                 </span>
                                 <span className="text-[10px] uppercase font-bold text-rose-600">
                                     Action Req
@@ -219,7 +220,7 @@ export function AdminDashboardClient() {
                             </div>
                             <div className="flex-1 bg-emerald-100/50 border border-emerald-200 rounded-lg p-2 text-center">
                                 <span className="block text-xl font-bold text-emerald-700">
-                                    {reportStats.byStatus.resolved || 0}
+                                    {reportStats.byStatus?.resolved || 0}
                                 </span>
                                 <span className="text-[10px] uppercase font-bold text-emerald-600">
                                     Resolved
@@ -234,20 +235,20 @@ export function AdminDashboardClient() {
                             <div className="flex justify-between text-sm mb-1">
                                 <span>Users</span>{" "}
                                 <span className="font-medium">
-                                    {reportStats.byTargetType.user || 0}
+                                    {reportStats.byTargetType?.user || 0}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm mb-1">
                                 <span>Posts</span>{" "}
                                 <span className="font-medium">
-                                    {reportStats.byTargetType.post || 0}
+                                    {reportStats.byTargetType?.post || 0}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span>Requests</span>{" "}
                                 <span className="font-medium">
-                                    {reportStats.byTargetType.support_request ||
-                                        0}
+                                    {reportStats.byTargetType
+                                        ?.support_request || 0}
                                 </span>
                             </div>
                         </div>
@@ -258,7 +259,7 @@ export function AdminDashboardClient() {
                     <StatCard title="Categories Usage">
                         <div className="flex items-end gap-2 mb-4">
                             <span className="text-4xl font-black text-slate-800">
-                                {categoryStats.total}
+                                {categoryStats.total || 0}
                             </span>
                             <span className="text-sm font-medium text-slate-500 mb-1">
                                 active categories
@@ -268,7 +269,7 @@ export function AdminDashboardClient() {
                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
                                 Most Used
                             </p>
-                            {categoryStats.mostUsed.length > 0 ? (
+                            {(categoryStats.mostUsed || []).length > 0 ? (
                                 <div className="space-y-2">
                                     {categoryStats.mostUsed.map((cat, idx) => (
                                         <div
@@ -300,7 +301,7 @@ export function AdminDashboardClient() {
                     <StatCard title="Community Posts">
                         <div className="flex items-end gap-2 mb-4">
                             <span className="text-4xl font-black text-slate-800">
-                                {postStats.total}
+                                {postStats.total || 0}
                             </span>
                             <span className="text-sm font-medium text-slate-500 mb-1">
                                 total posts
@@ -316,7 +317,7 @@ export function AdminDashboardClient() {
                                 </p>
                             </div>
                             <span className="text-xl font-bold text-emerald-600">
-                                {postStats.byStatus.active || 0}
+                                {postStats.byStatus?.active || 0}
                             </span>
                         </div>
                         <div className="flex items-center justify-between p-3 mt-2 bg-slate-50 rounded-lg border border-slate-100">
@@ -329,7 +330,7 @@ export function AdminDashboardClient() {
                                 </p>
                             </div>
                             <span className="text-xl font-bold text-rose-600">
-                                {postStats.byStatus.inactive || 0}
+                                {postStats.byStatus?.inactive || 0}
                             </span>
                         </div>
                     </StatCard>

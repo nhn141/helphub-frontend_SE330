@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, type ReactNode } from "react";
-import { useAuth } from "@/components/auth-provider";
+import { AuthProvider, useAuth } from "@/components/auth-provider";
 import { Notice, LoadingBlock } from "@/components/support-ui";
 
 const adminNavigation = [
@@ -38,6 +38,14 @@ const adminNavigation = [
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+    return (
+        <AuthProvider>
+            <AdminShell>{children}</AdminShell>
+        </AuthProvider>
+    );
+}
+
+function AdminShell({ children }: { children: ReactNode }) {
     const { profile, logout } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
@@ -52,10 +60,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     if (!profile || profile.role !== "ADMIN") {
         return (
             <div className="min-h-dvh flex items-center justify-center bg-[#f4f6f2] p-4">
-                <Notice type="error">
-                    Access Denied. You do not have permission to access the
-                    administration panel.
-                </Notice>
+                <Notice type="error">Access Denied. Redirecting...</Notice>
             </div>
         );
     }

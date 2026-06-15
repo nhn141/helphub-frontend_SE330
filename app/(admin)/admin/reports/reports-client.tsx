@@ -29,7 +29,6 @@ export function AdminReportsClient() {
         "ALL",
     );
 
-    // Modal states
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,20 +51,17 @@ export function AdminReportsClient() {
         fetchReports();
     }, [fetchReports]);
 
-    // Lọc reports dựa trên filter
     const filteredReports =
         statusFilter === "ALL"
             ? reports
             : reports.filter((r) => r.status === statusFilter);
-
-    // --- ACTIONS ---
 
     const handleReview = async (id: string, note: string) => {
         setIsSubmitting(true);
         try {
             const token = await getAccessToken();
             await reviewReport(token, id, { resolutionNote: note });
-            await fetchReports(); // Tải lại để có data mới nhất
+            await fetchReports();
             setIsModalOpen(false);
         } catch (err: any) {
             alert(`Failed to review report: ${err.message}`);
@@ -116,7 +112,6 @@ export function AdminReportsClient() {
             />
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                {/* Bộ lọc */}
                 <div className="p-4 border-b border-slate-200 bg-slate-50 flex gap-3 flex-wrap">
                     <select
                         value={statusFilter}

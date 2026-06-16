@@ -123,3 +123,15 @@ export function createPrivateConversationByEmail(
         accessToken,
     );
 }
+
+export function markMessageAsRead(
+    accessToken: string,
+    conversationId: string,
+    messageId: string,
+): Promise<void> {
+    return apiData<void>(
+        `/api/v1/conversations/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(messageId)}/read`,
+        { method: "PATCH" },
+        accessToken,
+    );
+}

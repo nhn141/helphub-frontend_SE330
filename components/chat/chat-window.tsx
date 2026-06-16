@@ -7,6 +7,7 @@ import {
     getConversationMessages,
     sendMessage,
     MessageResponse,
+    markMessageAsRead,
 } from "@/lib/chat-api";
 
 interface ChatWindowProps {
@@ -29,12 +30,29 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    const handleMarkAsRead = async (messageList: MessageResponse[]) => {
+        if (!profile?.id) return;
+        const lastOtherMsg = [...messageList]
+            .reverse()
+            .find((m) => m.senderId !== profile.id);
+
+        if (lastOtherMsg && !lastOtherMsg.id.startsWith("temp-")) {
+            try {
+                const token = await getAccessToken();
+                await markMessageAsRead(token, conversationId, lastOtherMsg.id);
+            } catch (err) {
+                console.error("Failed to mark as read", err);
+            }
+        }
+    };
+
     const fetchHistory = useCallback(async () => {
         setIsLoading(true);
         try {
             const token = await getAccessToken();
             const res = await getConversationMessages(token, conversationId);
             setMessages(res);
+            handleMarkAsRead(res);
             setTimeout(scrollToBottom, 100);
         } catch (error) {
             console.error("Failed to fetch messages:", error);
@@ -74,6 +92,9 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                                     return prev;
                                 return [...prev, newMsg];
                             });
+                            if (newMsg.senderId !== profile?.id) {
+                                handleMarkAsRead([newMsg]);
+                            }
                             setTimeout(scrollToBottom, 100);
                         }
                     }

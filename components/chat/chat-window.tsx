@@ -9,6 +9,11 @@ import {
     MessageResponse,
     markMessageAsRead,
     createMediaRecord,
+    getConversationById,
+    addMemberToConversation,
+    searchUsers,
+    UserSearchResponse,
+    ConversationSummaryResponse,
 } from "@/lib/chat-api";
 
 interface ChatWindowProps {
@@ -23,8 +28,18 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
     const [content, setContent] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
+    const [conversationDetail, setConversationDetail] =
+        useState<ConversationSummaryResponse | null>(null);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<UserSearchResponse[]>(
+        [],
+    );
+    const [isSearching, setIsSearching] = useState(false);
+    const [isAddingUser, setIsAddingUser] = useState<string | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const stompClientRef = useRef<Client | null>(null);
@@ -49,26 +64,30 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
         }
     };
 
-    const fetchHistory = useCallback(async () => {
+    const fetchHistoryAndDetail = useCallback(async () => {
         setIsLoading(true);
         try {
             const token = await getAccessToken();
-            const res = await getConversationMessages(token, conversationId);
-            setMessages(res);
-            handleMarkAsRead(res);
+            const [msgRes, detailRes] = await Promise.all([
+                getConversationMessages(token, conversationId),
+                getConversationById(token, conversationId),
+            ]);
+
+            setMessages(msgRes);
+            setConversationDetail(detailRes);
+            handleMarkAsRead(msgRes);
             setTimeout(scrollToBottom, 100);
         } catch (error) {
-            console.error("Failed to fetch messages:", error);
+            console.error("Failed to fetch chat data:", error);
         } finally {
             setIsLoading(false);
         }
     }, [conversationId, getAccessToken]);
 
     useEffect(() => {
-        fetchHistory();
+        fetchHistoryAndDetail();
 
         let client: Client;
-
         const connectWebSocket = async () => {
             const token = await getAccessToken();
             const wsUrl =
@@ -113,13 +132,65 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
         return () => {
             if (stompClientRef.current) stompClientRef.current.deactivate();
         };
-    }, [conversationId, fetchHistory, getAccessToken]);
+    }, [conversationId, fetchHistoryAndDetail, getAccessToken]);
+
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setSearchResults([]);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            setIsSearching(true);
+            try {
+                const token = await getAccessToken();
+                const results = await searchUsers(token, searchQuery);
+
+                const existingMemberIds =
+                    conversationDetail?.members?.map((m) => m.userId) || [];
+                const filtered = results.filter(
+                    (u) =>
+                        u.id !== profile?.id &&
+                        !existingMemberIds.includes(u.id),
+                );
+
+                setSearchResults(filtered);
+            } catch (e) {
+                console.error("Search failed", e);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, getAccessToken, profile?.id, conversationDetail]);
+
+    const handleAddMember = async (userId: string) => {
+        setIsAddingUser(userId);
+        try {
+            const token = await getAccessToken();
+            const updatedConv = await addMemberToConversation(
+                token,
+                conversationId,
+                userId,
+            );
+
+            setConversationDetail(updatedConv);
+            setSearchQuery("");
+            setSearchResults([]);
+            setIsAddModalOpen(false);
+        } catch (error) {
+            console.error("Failed to add member", error);
+            alert("Failed to add user to group.");
+        } finally {
+            setIsAddingUser(null);
+        }
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const filesArray = Array.from(e.target.files);
             setSelectedFiles((prev) => [...prev, ...filesArray]);
-
             const newPreviews = filesArray.map((file) =>
                 URL.createObjectURL(file),
             );
@@ -144,7 +215,6 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
         setIsSending(true);
         try {
             const token = await getAccessToken();
-
             const tempId = `temp-${Date.now()}`;
 
             const optimisticMedia = selectedFiles.map((file, idx) => ({
@@ -186,11 +256,8 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                 const uploadPreset =
                     process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
-                if (!cloudName || !uploadPreset) {
-                    throw new Error(
-                        "Missing Cloudinary configuration in .env.local",
-                    );
-                }
+                if (!cloudName || !uploadPreset)
+                    throw new Error("Missing Cloudinary configuration");
 
                 for (const file of currentFiles) {
                     const formData = new FormData();
@@ -225,6 +292,7 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
             const finalContent =
                 currentText ||
                 (uploadedMediaIds.length > 0 ? "🖼️ [Attachment]" : "");
+
             const realMsg = await sendMessage(token, conversationId, {
                 content: finalContent,
                 mediaIds: uploadedMediaIds,
@@ -232,7 +300,6 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
 
             setMessages((prev) => {
                 const isAlreadyInState = prev.some((m) => m.id === realMsg.id);
-
                 if (isAlreadyInState) {
                     return prev.filter((m) => m.id !== tempId);
                 } else {
@@ -250,7 +317,7 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
     };
 
     return (
-        <div className="flex flex-col h-full bg-slate-50">
+        <div className="flex flex-col h-full bg-slate-50 relative">
             <div className="flex items-center gap-3 p-4 bg-white border-b border-slate-200 shadow-sm z-10">
                 <button
                     onClick={onBack}
@@ -259,16 +326,28 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                     ←
                 </button>
                 <div className="size-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold">
-                    #
+                    {conversationDetail?.type === "GROUP" ? "👥" : "#"}
                 </div>
-                <div>
-                    <h3 className="font-bold text-slate-800">
-                        Conversation Details
+
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-slate-800 truncate">
+                        {conversationDetail?.name || "Conversation Details"}
                     </h3>
                     <p className="text-xs text-slate-400">
-                        ID: {conversationId.split("-")[0]}...
+                        {conversationDetail?.type === "GROUP"
+                            ? `${conversationDetail?.members?.length || 0} members`
+                            : `ID: ${conversationId.split("-")[0]}...`}
                     </p>
                 </div>
+
+                {conversationDetail?.type === "GROUP" && (
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                    >
+                        <span>+</span> Add Member
+                    </button>
+                )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -329,7 +408,6 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                                             </p>
                                         )}
 
-                                        {/* Render Media */}
                                         {msg.media && msg.media.length > 0 && (
                                             <div
                                                 className={`mt-2 grid gap-1 ${msg.media.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
@@ -365,7 +443,6 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
             </div>
 
             <div className="p-4 bg-white border-t border-slate-200">
-                {/* Khu vực Preview Ảnh */}
                 {imagePreviews.length > 0 && (
                     <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
                         {imagePreviews.map((preview, index) => (
@@ -461,6 +538,93 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                     </button>
                 </form>
             </div>
+
+            {isAddModalOpen && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm rounded-r-2xl">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-5 animate-in fade-in zoom-in-95 duration-150">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-slate-900">
+                                Add to Group
+                            </h3>
+                            <button
+                                onClick={() => setIsAddModalOpen(false)}
+                                className="text-slate-400 hover:text-rose-500"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="relative">
+                            <input
+                                type="text"
+                                autoFocus
+                                placeholder="Search by name or email..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            />
+
+                            <div className="mt-2 bg-white border border-slate-200 rounded-xl max-h-60 overflow-y-auto">
+                                {searchQuery.trim().length === 0 ? (
+                                    <div className="p-4 text-xs text-center text-slate-500">
+                                        Type to search users...
+                                    </div>
+                                ) : isSearching ? (
+                                    <div className="p-4 text-xs text-center text-slate-500">
+                                        Searching...
+                                    </div>
+                                ) : searchResults.length > 0 ? (
+                                    searchResults.map((user) => (
+                                        <div
+                                            key={user.id}
+                                            className="flex items-center justify-between p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition"
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="size-8 bg-emerald-100 rounded-full flex items-center justify-center text-xs font-bold text-emerald-700 overflow-hidden shrink-0">
+                                                    {user.avatarUrl ? (
+                                                        <img
+                                                            src={user.avatarUrl}
+                                                            alt=""
+                                                            className="size-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        user.fullName.charAt(0)
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-semibold text-slate-800 truncate">
+                                                        {user.fullName}
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-500 truncate">
+                                                        {user.email}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() =>
+                                                    handleAddMember(user.id)
+                                                }
+                                                disabled={
+                                                    isAddingUser === user.id
+                                                }
+                                                className="ml-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-md text-xs font-semibold disabled:opacity-50 transition shrink-0"
+                                            >
+                                                {isAddingUser === user.id
+                                                    ? "Adding..."
+                                                    : "Add"}
+                                            </button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="p-4 text-xs text-center text-slate-500">
+                                        No users found.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

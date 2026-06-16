@@ -58,6 +58,18 @@ export interface SendMessageRequest {
     mediaIds?: string[];
 }
 
+export interface CreateGroupConversationRequest {
+    name: string;
+    memberIds: string[];
+}
+
+export interface UserSearchResponse {
+    id: string;
+    fullName: string;
+    email: string;
+    avatarUrl: string | null;
+}
+
 export function getMyConversations(
     accessToken: string,
 ): Promise<ConversationSummaryResponse[]> {
@@ -154,6 +166,68 @@ export function createMediaRecord(
         {
             method: "POST",
             body: JSON.stringify(payload),
+        },
+        accessToken,
+    );
+}
+
+export function searchUsers(
+    accessToken: string,
+    keyword: string,
+): Promise<UserSearchResponse[]> {
+    return apiData<UserSearchResponse[]>(
+        `/api/v1/users/search?keyword=${encodeURIComponent(keyword)}`,
+        { method: "GET" },
+        accessToken,
+    );
+}
+
+export function createGroupConversation(
+    accessToken: string,
+    payload: CreateGroupConversationRequest,
+): Promise<ConversationSummaryResponse> {
+    return apiData<ConversationSummaryResponse>(
+        `/api/v1/conversations/group`,
+        {
+            method: "POST",
+            body: JSON.stringify(payload),
+        },
+        accessToken,
+    );
+}
+
+export function leaveConversation(
+    accessToken: string,
+    conversationId: string,
+): Promise<void> {
+    return apiData<void>(
+        `/api/v1/conversations/${encodeURIComponent(conversationId)}/members/me`,
+        { method: "DELETE" },
+        accessToken,
+    );
+}
+
+export function getConversationById(
+    accessToken: string,
+    conversationId: string,
+): Promise<ConversationSummaryResponse> {
+    return apiData<ConversationSummaryResponse>(
+        `/api/v1/conversations/${encodeURIComponent(conversationId)}`,
+        { method: "GET" },
+        accessToken,
+    );
+}
+
+export function addMemberToConversation(
+    accessToken: string,
+    conversationId: string,
+    userId: string,
+): Promise<ConversationSummaryResponse> {
+    return apiData<ConversationSummaryResponse>(
+        `/api/v1/conversations/${encodeURIComponent(conversationId)}/members`,
+        {
+            method: "POST",
+            body: JSON.stringify({ userId }),
         },
         accessToken,
     );

@@ -6,6 +6,7 @@ import {
     getMyConversations,
     createPrivateConversationByEmail,
     ConversationSummaryResponse,
+    createGroupConversation,
 } from "@/lib/chat-api";
 
 interface InboxSidebarProps {
@@ -21,7 +22,10 @@ export function InboxSidebar({ activeId, onSelect }: InboxSidebarProps) {
     const [loading, setLoading] = useState(true);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [chatMode, setChatMode] = useState<"PRIVATE" | "GROUP">("PRIVATE");
     const [targetEmail, setTargetEmail] = useState("");
+    const [groupName, setGroupName] = useState("");
+
     const [isCreating, setIsCreating] = useState(false);
     const [modalError, setModalError] = useState<string | null>(null);
 
@@ -43,25 +47,39 @@ export function InboxSidebar({ activeId, onSelect }: InboxSidebarProps) {
 
     const handleCreateChat = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!targetEmail.trim()) return;
-
         setIsCreating(true);
         setModalError(null);
+
         try {
             const token = await getAccessToken();
-            const newConv = await createPrivateConversationByEmail(
-                token,
-                targetEmail.trim(),
-            );
+            let newConv;
+
+            if (chatMode === "PRIVATE") {
+                if (!targetEmail.trim()) throw new Error("Email is required");
+                newConv = await createPrivateConversationByEmail(
+                    token,
+                    targetEmail.trim(),
+                );
+            } else {
+                if (!groupName.trim())
+                    throw new Error("Group name is required");
+                if (!profile?.id) throw new Error("User profile not found");
+
+                newConv = await createGroupConversation(token, {
+                    name: groupName.trim(),
+                    memberIds: [profile.id],
+                });
+            }
 
             await fetchInbox();
             onSelect(newConv.id);
 
             setIsModalOpen(false);
             setTargetEmail("");
+            setGroupName("");
         } catch (err: any) {
             setModalError(
-                err.message || "User not found or failed to start chat.",
+                err.message || "Failed to start conversation. Check user info.",
             );
         } finally {
             setIsCreating(false);
@@ -201,13 +219,32 @@ export function InboxSidebar({ activeId, onSelect }: InboxSidebarProps) {
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-5 animate-in fade-in zoom-in-95 duration-150">
-                        <h3 className="text-lg font-bold text-slate-900 mb-2">
+                        <h3 className="text-lg font-bold text-slate-900 mb-4">
                             New Conversation
                         </h3>
-                        <p className="text-xs text-slate-500 mb-4">
-                            Enter the email address of the user you want to chat
-                            with.
-                        </p>
+
+                        <div className="flex bg-slate-100 p-1 rounded-lg mb-4">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setChatMode("PRIVATE");
+                                    setModalError(null);
+                                }}
+                                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition ${chatMode === "PRIVATE" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            >
+                                Direct Message
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setChatMode("GROUP");
+                                    setModalError(null);
+                                }}
+                                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition ${chatMode === "GROUP" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            >
+                                Group Chat
+                            </button>
+                        </div>
 
                         <form onSubmit={handleCreateChat} className="space-y-4">
                             {modalError && (
@@ -215,27 +252,52 @@ export function InboxSidebar({ activeId, onSelect }: InboxSidebarProps) {
                                     {modalError}
                                 </div>
                             )}
-                            <div>
-                                <input
-                                    type="email"
-                                    required
-                                    disabled={isCreating}
-                                    placeholder="user@example.com"
-                                    value={targetEmail}
-                                    onChange={(e) =>
-                                        setTargetEmail(e.target.value)
-                                    }
-                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                />
-                            </div>
+
+                            {chatMode === "PRIVATE" ? (
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                                        User Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        required
+                                        disabled={isCreating}
+                                        placeholder="user@example.com"
+                                        value={targetEmail}
+                                        onChange={(e) =>
+                                            setTargetEmail(e.target.value)
+                                        }
+                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    />
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-700 mb-1">
+                                        Group Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        disabled={isCreating}
+                                        placeholder="e.g., Volunteer Team Alpha"
+                                        value={groupName}
+                                        onChange={(e) =>
+                                            setGroupName(e.target.value)
+                                        }
+                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    />
+                                </div>
+                            )}
+
                             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                                 <button
                                     type="button"
                                     disabled={isCreating}
                                     onClick={() => {
                                         setIsModalOpen(false);
-                                        setTargetEmail("");
                                         setModalError(null);
+                                        setGroupName("");
+                                        setTargetEmail("");
                                     }}
                                     className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-md hover:bg-slate-200 transition"
                                 >
@@ -243,10 +305,10 @@ export function InboxSidebar({ activeId, onSelect }: InboxSidebarProps) {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={isCreating || !targetEmail.trim()}
+                                    disabled={isCreating}
                                     className="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-md hover:bg-emerald-700 disabled:opacity-50 transition"
                                 >
-                                    {isCreating ? "Creating..." : "Start Chat"}
+                                    {isCreating ? "Creating..." : "Create"}
                                 </button>
                             </div>
                         </form>

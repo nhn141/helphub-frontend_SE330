@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { InboxSidebar } from "@/components/chat/inbox-sidebar";
+import { ChatWindow } from "@/components/chat/chat-window";
 
 export function MessagesClient() {
     const [activeConversationId, setActiveConversationId] = useState<
@@ -27,22 +28,10 @@ export function MessagesClient() {
                 }`}
             >
                 {activeConversationId ? (
-                    <div className="flex items-center justify-center h-full text-slate-500 flex-col">
-                        <span className="text-4xl animate-bounce mb-3">🛠️</span>
-                        <p className="font-medium text-slate-700">
-                            Real-time Chat Window is under construction...
-                        </p>
-                        <p className="text-xs mt-2">
-                            Conversation ID: {activeConversationId}
-                        </p>
-
-                        <button
-                            className="md:hidden mt-4 text-emerald-600 font-semibold bg-emerald-50 px-4 py-2 rounded-lg"
-                            onClick={() => setActiveConversationId(null)}
-                        >
-                            ← Back to Inbox
-                        </button>
-                    </div>
+                    <ChatWindow
+                        conversationId={activeConversationId}
+                        onBack={() => setActiveConversationId(null)}
+                    />
                 ) : (
                     <div className="flex items-center justify-center h-full text-slate-400 flex-col gap-3">
                         <span className="text-5xl opacity-50">💬</span>

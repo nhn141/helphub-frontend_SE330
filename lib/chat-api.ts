@@ -81,3 +81,18 @@ export function getConversationMessages(
         accessToken,
     );
 }
+
+export function sendMessage(
+    accessToken: string,
+    conversationId: string,
+    payload: SendMessageRequest,
+): Promise<MessageResponse> {
+    return apiData<MessageResponse>(
+        `/api/v1/conversations/${encodeURIComponent(conversationId)}/messages`,
+        {
+            method: "POST",
+            body: JSON.stringify(payload),
+        },
+        accessToken,
+    );
+}

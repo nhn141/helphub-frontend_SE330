@@ -17,6 +17,35 @@ export type AuthResponse = {
     tokenType: "Bearer";
     accessTokenExpiresIn: number;
     refreshTokenExpiresIn: number;
+    message?: string | null;
+};
+
+export type RegisterResponse = Omit<
+    AuthResponse,
+    "accessToken" | "refreshToken" | "tokenType"
+> & {
+    accessToken: string | null;
+    refreshToken: string | null;
+    tokenType: "Bearer" | null;
+};
+
+export type VerifyEmailPayload = {
+    email: string;
+    otp: string;
+};
+
+export type ResendEmailOtpPayload = {
+    email: string;
+};
+
+export type ForgotPasswordPayload = {
+    email: string;
+};
+
+export type ResetPasswordPayload = {
+    email: string;
+    otp: string;
+    newPassword: string;
 };
 
 export type UserProfile = {
@@ -239,10 +268,20 @@ async function apiRequest<T>(
         headers.set("Authorization", `Bearer ${accessToken}`);
     }
 
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-        ...init,
-        headers,
-    });
+    let response: Response;
+
+    try {
+        response = await fetch(`${API_BASE_URL}${path}`, {
+            ...init,
+            headers,
+        });
+    } catch (error) {
+        throw new ApiError(
+            `Unable to reach HelpHub API at ${API_BASE_URL}`,
+            0,
+            error,
+        );
+    }
 
     return parseResponse<T>(response);
 }
@@ -263,11 +302,67 @@ export function login(payload: LoginPayload): Promise<AuthResponse> {
     });
 }
 
-export function register(payload: RegisterPayload): Promise<AuthResponse> {
-    return apiRequest<AuthResponse>("/api/v1/auth/register", {
+export function register(payload: RegisterPayload): Promise<RegisterResponse> {
+    return apiRequest<RegisterResponse>("/api/v1/auth/register", {
         method: "POST",
         body: JSON.stringify(payload),
     });
+}
+
+export async function verifyEmail(
+    payload: VerifyEmailPayload,
+): Promise<string> {
+    const response = await apiRequest<ApiEnvelope<null>>(
+        "/api/v1/auth/verify-email",
+        {
+            method: "POST",
+            body: JSON.stringify(payload),
+        },
+    );
+
+    return response.message;
+}
+
+export async function resendEmailOtp(
+    payload: ResendEmailOtpPayload,
+): Promise<string> {
+    const response = await apiRequest<ApiEnvelope<null>>(
+        "/api/v1/auth/resend-otp",
+        {
+            method: "POST",
+            body: JSON.stringify(payload),
+        },
+    );
+
+    return response.message;
+}
+
+export async function forgotPassword(
+    payload: ForgotPasswordPayload,
+): Promise<string> {
+    const response = await apiRequest<ApiEnvelope<null>>(
+        "/api/v1/auth/forgot-password",
+        {
+            method: "POST",
+            body: JSON.stringify(payload),
+        },
+    );
+
+    return response.message;
+}
+
+export async function resetPassword(
+    payload: ResetPasswordPayload,
+): Promise<string> {
+    const response = await apiRequest<ApiEnvelope<null>>(
+        "/api/v1/auth/reset-password",
+        {
+            method: "POST",
+            body: JSON.stringify(payload),
+        },
+    );
+
+    return response.message;
 }
 
 export function refreshSession(refreshToken: string): Promise<AuthResponse> {
@@ -570,8 +665,8 @@ export function completeVolunteerAssignment(
 export function createReport(
     accessToken: string,
     payload: CreateReportPayload,
-): Promise<any> {
-    return apiData<any>(
+): Promise<unknown> {
+    return apiData<unknown>(
         "/api/reports",
         {
             method: "POST",

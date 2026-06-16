@@ -33,15 +33,8 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
         setIsLoading(true);
         try {
             const token = await getAccessToken();
-            const res = await getConversationMessages(
-                token,
-                conversationId,
-                0,
-                50,
-            );
-
-            setMessages(res.content.reverse());
-
+            const res = await getConversationMessages(token, conversationId);
+            setMessages(res);
             setTimeout(scrollToBottom, 100);
         } catch (error) {
             console.error("Failed to fetch messages:", error);
@@ -58,27 +51,31 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
         const connectWebSocket = async () => {
             const token = await getAccessToken();
             const wsUrl =
-                process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";
+                process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8081/ws";
 
             client = new Client({
                 brokerURL: wsUrl,
-                connectHeaders: {
-                    Authorization: `Bearer ${token}`,
-                },
-                debug: (str) => {},
+                connectHeaders: { Authorization: `Bearer ${token}` },
                 reconnectDelay: 5000,
-                heartbeatIncoming: 4000,
-                heartbeatOutgoing: 4000,
             });
 
             client.onConnect = () => {
-                console.log("WebSocket Connected!");
                 client.subscribe("/user/queue/messages", (message) => {
-                    const newMsg: MessageResponse = JSON.parse(message.body);
+                    const payload = JSON.parse(message.body);
 
-                    if (newMsg.conversationId === conversationId) {
-                        setMessages((prev) => [...prev, newMsg]);
-                        setTimeout(scrollToBottom, 100);
+                    if (
+                        payload.eventType === "MESSAGE_CREATED" &&
+                        payload.message
+                    ) {
+                        const newMsg: MessageResponse = payload.message;
+                        if (newMsg.conversationId === conversationId) {
+                            setMessages((prev) => {
+                                if (prev.some((m) => m.id === newMsg.id))
+                                    return prev;
+                                return [...prev, newMsg];
+                            });
+                            setTimeout(scrollToBottom, 100);
+                        }
                     }
                 });
             };
@@ -90,9 +87,7 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
         connectWebSocket();
 
         return () => {
-            if (stompClientRef.current) {
-                stompClientRef.current.deactivate();
-            }
+            if (stompClientRef.current) stompClientRef.current.deactivate();
         };
     }, [conversationId, fetchHistory, getAccessToken]);
 
@@ -110,13 +105,12 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                 conversationId,
                 senderId: profile?.id || "",
                 senderName: profile?.fullName || "Me",
-                senderAvatar: null,
+                senderAvatarUrl: null,
                 content: content.trim(),
-                type: "TEXT",
-                mediaUrls: null,
-                isRead: false,
+                media: [],
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
+                editedAt: null,
             };
 
             setMessages((prev) => [...prev, optimisticMsg]);
@@ -124,17 +118,21 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
             scrollToBottom();
 
             const realMsg = await sendMessage(token, conversationId, {
-                conversationId,
                 content: optimisticMsg.content,
-                mediaUrls: [],
+                mediaIds: [],
             });
 
-            setMessages((prev) =>
-                prev.map((m) => (m.id === tempId ? realMsg : m)),
-            );
+            setMessages((prev) => {
+                const isAlreadyInState = prev.some((m) => m.id === realMsg.id);
+
+                if (isAlreadyInState) {
+                    return prev.filter((m) => m.id !== tempId);
+                } else {
+                    return prev.map((m) => (m.id === tempId ? realMsg : m));
+                }
+            });
         } catch (error) {
             console.error("Failed to send message", error);
-            alert("Failed to send message. Please try again.");
             setMessages((prev) =>
                 prev.filter((m) => !m.id.startsWith("temp-")),
             );
@@ -189,8 +187,16 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                                 className={`flex gap-3 ${isMe ? "justify-end" : "justify-start"} ${isTemp ? "opacity-50" : ""}`}
                             >
                                 {!isMe && (
-                                    <div className="size-8 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-500 mt-auto">
-                                        {msg.senderName?.charAt(0) || "?"}
+                                    <div className="size-8 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-500 mt-auto overflow-hidden">
+                                        {msg.senderAvatarUrl ? (
+                                            <img
+                                                src={msg.senderAvatarUrl}
+                                                alt="avatar"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            msg.senderName?.charAt(0) || "?"
+                                        )}
                                     </div>
                                 )}
                                 <div
@@ -213,21 +219,21 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                                             {msg.content}
                                         </p>
 
-                                        {msg.mediaUrls &&
-                                            msg.mediaUrls.length > 0 && (
-                                                <div className="mt-2 grid gap-1 grid-cols-2">
-                                                    {msg.mediaUrls.map(
-                                                        (url, i) => (
-                                                            <img
-                                                                key={i}
-                                                                src={url}
-                                                                alt="attachment"
-                                                                className="rounded-md max-h-32 object-cover"
-                                                            />
-                                                        ),
-                                                    )}
-                                                </div>
-                                            )}
+                                        {msg.media && msg.media.length > 0 && (
+                                            <div className="mt-2 grid gap-1 grid-cols-2">
+                                                {msg.media.map((item) => (
+                                                    <img
+                                                        key={item.id}
+                                                        src={item.fileUrl}
+                                                        alt={
+                                                            item.altText ||
+                                                            "attachment"
+                                                        }
+                                                        className="rounded-md max-h-32 w-full object-cover"
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                     <span className="text-[10px] text-slate-400 mt-1 mx-1">
                                         {new Date(
@@ -247,13 +253,6 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
 
             <div className="p-4 bg-white border-t border-slate-200">
                 <form onSubmit={handleSend} className="flex items-end gap-2">
-                    <button
-                        type="button"
-                        className="p-2 text-slate-400 hover:text-emerald-600 transition"
-                        title="Attach file"
-                    >
-                        📎
-                    </button>
                     <textarea
                         value={content}
                         onChange={(e) => setContent(e.target.value)}

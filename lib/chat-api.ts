@@ -3,35 +3,50 @@ import { apiData } from "./api";
 
 export type MessageType = "TEXT" | "IMAGE" | "FILE" | "SYSTEM";
 export type ConversationType = "PRIVATE" | "GROUP" | "COMMUNITY";
-
+export interface MessageMediaResponse {
+    id: string;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    mimeType: string;
+    fileSize: number;
+    altText: string | null;
+}
 export interface MessageResponse {
     id: string;
     conversationId: string;
     senderId: string;
     senderName: string;
-    senderAvatar: string | null;
+    senderAvatarUrl: string | null;
     content: string;
-    type: MessageType;
-    mediaUrls: string[] | null;
-    isRead: boolean;
+    media: MessageMediaResponse[];
     createdAt: string;
     updatedAt: string;
+    editedAt: string | null;
+}
+
+export interface ConversationMemberResponse {
+    userId: string;
+    fullName: string;
+    email: string;
+    avatarUrl: string | null;
+    joinedAt: string;
 }
 
 export interface ConversationSummaryResponse {
     id: string;
-    name: string;
+    name: string | null;
     avatarUrl: string | null;
     type: ConversationType;
-    lastMessage: MessageResponse | null;
+    members: ConversationMemberResponse[];
+    lastMessage?: MessageResponse | null;
     unreadCount: number;
     updatedAt: string;
 }
 
 export interface SendMessageRequest {
-    conversationId: string;
     content: string;
-    mediaUrls?: string[];
+    mediaIds?: string[];
 }
 
 export function getMyConversations(
@@ -72,11 +87,9 @@ export function markConversationAsRead(
 export function getConversationMessages(
     accessToken: string,
     conversationId: string,
-    page: number = 0,
-    size: number = 30,
-): Promise<PageResponse<MessageResponse>> {
-    return apiData<PageResponse<MessageResponse>>(
-        `/api/v1/messages/conversation/${encodeURIComponent(conversationId)}?page=${page}&size=${size}`,
+): Promise<MessageResponse[]> {
+    return apiData<MessageResponse[]>(
+        `/api/v1/conversations/${encodeURIComponent(conversationId)}/messages`,
         { method: "GET" },
         accessToken,
     );
@@ -92,6 +105,20 @@ export function sendMessage(
         {
             method: "POST",
             body: JSON.stringify(payload),
+        },
+        accessToken,
+    );
+}
+
+export function createPrivateConversationByEmail(
+    accessToken: string,
+    email: string,
+): Promise<ConversationSummaryResponse> {
+    return apiData<ConversationSummaryResponse>(
+        `/api/v1/conversations/private/by-email`,
+        {
+            method: "POST",
+            body: JSON.stringify({ receiverEmail: email.trim() }),
         },
         accessToken,
     );

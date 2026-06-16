@@ -8,6 +8,7 @@ import {
     sendMessage,
     MessageResponse,
     markMessageAsRead,
+    createMediaRecord, // Bổ sung import này
 } from "@/lib/chat-api";
 
 interface ChatWindowProps {
@@ -22,6 +23,10 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
     const [content, setContent] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
+
+    // Thêm State quản lý file ảnh
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const stompClientRef = useRef<Client | null>(null);
@@ -112,35 +117,125 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
         };
     }, [conversationId, fetchHistory, getAccessToken]);
 
+    // Xử lý khi người dùng chọn ảnh
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const filesArray = Array.from(e.target.files);
+            setSelectedFiles((prev) => [...prev, ...filesArray]);
+
+            const newPreviews = filesArray.map((file) =>
+                URL.createObjectURL(file),
+            );
+            setImagePreviews((prev) => [...prev, ...newPreviews]);
+        }
+    };
+
+    // Xóa ảnh khỏi danh sách chọn
+    const removePreview = (index: number) => {
+        setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+        setImagePreviews((prev) => {
+            const newPreviews = [...prev];
+            URL.revokeObjectURL(newPreviews[index]);
+            newPreviews.splice(index, 1);
+            return newPreviews;
+        });
+    };
+
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!content.trim()) return;
+        // Cho phép gửi nếu có nội dung HOẶC có ảnh
+        if (!content.trim() && selectedFiles.length === 0) return;
 
         setIsSending(true);
         try {
             const token = await getAccessToken();
 
             const tempId = `temp-${Date.now()}`;
+
+            // Xây dựng UI tạm thời cho ảnh
+            const optimisticMedia = selectedFiles.map((file, idx) => ({
+                id: `temp-media-${idx}`,
+                fileName: file.name,
+                fileUrl: imagePreviews[idx],
+                fileType: "IMAGE",
+                mimeType: file.type,
+                fileSize: file.size,
+                altText: null,
+            }));
+
             const optimisticMsg: MessageResponse = {
                 id: tempId,
                 conversationId,
                 senderId: profile?.id || "",
                 senderName: profile?.fullName || "Me",
-                senderAvatarUrl: null,
+                senderAvatarUrl: profile?.avatarUrl || null,
                 content: content.trim(),
-                media: [],
+                media: optimisticMedia,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 editedAt: null,
             };
 
             setMessages((prev) => [...prev, optimisticMsg]);
+
+            // Dọn dẹp form ngay lập tức
+            const currentText = content.trim();
+            const currentFiles = [...selectedFiles];
             setContent("");
+            setSelectedFiles([]);
+            setImagePreviews([]);
             scrollToBottom();
 
+            let uploadedMediaIds: string[] = [];
+
+            // Xử lý upload ảnh nếu có
+            if (currentFiles.length > 0) {
+                const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                const uploadPreset =
+                    process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+                if (!cloudName || !uploadPreset) {
+                    throw new Error(
+                        "Missing Cloudinary configuration in .env.local",
+                    );
+                }
+
+                for (const file of currentFiles) {
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    formData.append("upload_preset", uploadPreset);
+
+                    const res = await fetch(
+                        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+                        {
+                            method: "POST",
+                            body: formData,
+                        },
+                    );
+
+                    if (!res.ok) throw new Error("Cloudinary upload failed");
+                    const cloudData = await res.json();
+
+                    const mediaRecord = await createMediaRecord(token, {
+                        fileName: file.name,
+                        fileUrl: cloudData.secure_url,
+                        fileType: "IMAGE",
+                        mimeType: file.type || "image/jpeg",
+                        fileSize: cloudData.bytes,
+                        altText: null,
+                        isPublic: true,
+                    });
+
+                    uploadedMediaIds.push(mediaRecord.id);
+                }
+            }
+
+            const finalContent =
+                currentText ||
+                (uploadedMediaIds.length > 0 ? "🖼️ [Attachment]" : "");
             const realMsg = await sendMessage(token, conversationId, {
-                content: optimisticMsg.content,
-                mediaIds: [],
+                content: finalContent,
+                mediaIds: uploadedMediaIds,
             });
 
             setMessages((prev) => {
@@ -236,12 +331,17 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                                                 : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm"
                                         }`}
                                     >
-                                        <p className="text-sm whitespace-pre-wrap break-words">
-                                            {msg.content}
-                                        </p>
+                                        {msg.content && (
+                                            <p className="text-sm whitespace-pre-wrap break-words">
+                                                {msg.content}
+                                            </p>
+                                        )}
 
+                                        {/* Render Media */}
                                         {msg.media && msg.media.length > 0 && (
-                                            <div className="mt-2 grid gap-1 grid-cols-2">
+                                            <div
+                                                className={`mt-2 grid gap-1 ${msg.media.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
+                                            >
                                                 {msg.media.map((item) => (
                                                     <img
                                                         key={item.id}
@@ -273,7 +373,58 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
             </div>
 
             <div className="p-4 bg-white border-t border-slate-200">
+                {/* Khu vực Preview Ảnh */}
+                {imagePreviews.length > 0 && (
+                    <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+                        {imagePreviews.map((preview, index) => (
+                            <div
+                                key={index}
+                                className="relative w-16 h-16 flex-shrink-0"
+                            >
+                                <img
+                                    src={preview}
+                                    alt="Preview"
+                                    className="w-full h-full object-cover rounded-lg border border-slate-200"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => removePreview(index)}
+                                    className="absolute -top-1 -right-1 bg-slate-800 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-rose-500 transition"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 <form onSubmit={handleSend} className="flex items-end gap-2">
+                    <label
+                        className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-slate-50 rounded-xl transition cursor-pointer"
+                        title="Attach file"
+                    >
+                        <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                            ></path>
+                        </svg>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={handleFileChange}
+                            disabled={isSending}
+                        />
+                    </label>
                     <textarea
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
@@ -290,22 +441,31 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                     />
                     <button
                         type="submit"
-                        disabled={!content.trim() || isSending}
+                        disabled={
+                            (!content.trim() && selectedFiles.length === 0) ||
+                            isSending
+                        }
                         className="p-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <svg
-                            className="w-5 h-5 rotate-90"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                            ></path>
-                        </svg>
+                        {isSending ? (
+                            <span className="flex size-5 items-center justify-center animate-spin">
+                                ⏳
+                            </span>
+                        ) : (
+                            <svg
+                                className="w-5 h-5 rotate-90"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                                ></path>
+                            </svg>
+                        )}
                     </button>
                 </form>
             </div>

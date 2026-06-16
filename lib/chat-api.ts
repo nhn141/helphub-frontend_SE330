@@ -43,6 +43,15 @@ export interface ConversationSummaryResponse {
     unreadCount: number;
     updatedAt: string;
 }
+export interface CreateMediaPayload {
+    fileName: string;
+    fileUrl: string;
+    fileType: "IMAGE" | "VIDEO" | "DOCUMENT" | "AUDIO";
+    mimeType: string;
+    fileSize: number;
+    altText: string | null;
+    isPublic: boolean;
+}
 
 export interface SendMessageRequest {
     content: string;
@@ -132,6 +141,20 @@ export function markMessageAsRead(
     return apiData<void>(
         `/api/v1/conversations/${encodeURIComponent(conversationId)}/messages/${encodeURIComponent(messageId)}/read`,
         { method: "PATCH" },
+        accessToken,
+    );
+}
+
+export function createMediaRecord(
+    accessToken: string,
+    payload: CreateMediaPayload,
+): Promise<{ id: string }> {
+    return apiData<{ id: string }>(
+        "/api/v1/media",
+        {
+            method: "POST",
+            body: JSON.stringify(payload),
+        },
         accessToken,
     );
 }

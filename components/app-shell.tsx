@@ -23,6 +23,12 @@ const navigation = [
         label: "Community Feed",
         icon: UsersIcon,
     },
+    // BỔ SUNG MESSAGES VÀO ĐÂY
+    {
+        href: "/messages",
+        label: "Messages",
+        icon: MessageIcon,
+    },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -202,6 +208,11 @@ function getPageTitle(pathname: string): string {
         return "Community Feed";
     }
 
+    // BỔ SUNG TIÊU ĐỀ CHO MESSAGES
+    if (pathname.startsWith("/messages")) {
+        return "Messages";
+    }
+
     return "Overview";
 }
 
@@ -269,6 +280,24 @@ function UsersIcon() {
             <circle cx="9" cy="7" r="4" />
             <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+    );
+}
+
+// BỔ SUNG ICON CHO MESSAGES
+function MessageIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="size-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
         </svg>
     );
 }

@@ -36,11 +36,9 @@ export interface SendMessageRequest {
 
 export function getMyConversations(
     accessToken: string,
-    page: number = 0,
-    size: number = 20,
-): Promise<PageResponse<ConversationSummaryResponse>> {
-    return apiData<PageResponse<ConversationSummaryResponse>>(
-        `/api/v1/conversations/my-inbox?page=${page}&size=${size}`,
+): Promise<ConversationSummaryResponse[]> {
+    return apiData<ConversationSummaryResponse[]>(
+        `/api/v1/conversations/me`,
         { method: "GET" },
         accessToken,
     );
@@ -51,8 +49,11 @@ export function getOrCreatePrivateConversation(
     targetUserId: string,
 ): Promise<ConversationSummaryResponse> {
     return apiData<ConversationSummaryResponse>(
-        `/api/v1/conversations/private/${encodeURIComponent(targetUserId)}`,
-        { method: "POST" },
+        `/api/v1/conversations/private`,
+        {
+            method: "POST",
+            body: JSON.stringify({ targetUserId: targetUserId }),
+        },
         accessToken,
     );
 }

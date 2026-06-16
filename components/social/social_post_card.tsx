@@ -18,6 +18,8 @@ import {
 import { SocialCommentSection } from "./social_comment_section";
 import { useAuth } from "../auth-provider";
 import { ReportModal } from "../report-modal";
+import { getOrCreatePrivateConversation } from "@/lib/chat-api";
+import { useRouter } from "next/navigation";
 
 interface SocialPostCardProps {
     post: PostSummaryResponse;
@@ -31,6 +33,7 @@ export function SocialPostCard({
     onDelete,
 }: SocialPostCardProps) {
     const { profile } = useAuth();
+    const router = useRouter();
     const [media, setMedia] = useState<PostMedia[]>([]);
     const [reactionCount, setReactionCount] = useState<ReactionCount | null>(
         null,
@@ -49,6 +52,7 @@ export function SocialPostCard({
     );
     const [isUpdating, setIsUpdating] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [isStartingChat, setIsStartingChat] = useState(false);
 
     const isAuthor = profile?.id === post.authorId;
 
@@ -158,6 +162,23 @@ export function SocialPostCard({
         }
     };
 
+    const handleStartChat = async () => {
+        if (isAuthor) return;
+        setIsStartingChat(true);
+        try {
+            const conv = await getOrCreatePrivateConversation(
+                accessToken,
+                post.authorId,
+            );
+            router.push(`/messages?convId=${conv.id}`);
+        } catch (error) {
+            console.error("Failed to start chat:", error);
+            alert("Could not start chat.");
+        } finally {
+            setIsStartingChat(false);
+        }
+    };
+
     const handleUpdate = async () => {
         if (
             !editContent.trim() ||
@@ -202,9 +223,21 @@ export function SocialPostCard({
                     )}
                 </div>
                 <div>
-                    <h4 className="font-semibold text-gray-900">
-                        {post.authorName}
-                    </h4>
+                    <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-gray-900">
+                            {post.authorName}
+                        </h4>
+                        {!isAuthor && (
+                            <button
+                                onClick={handleStartChat}
+                                disabled={isStartingChat}
+                                className="text-emerald-600 hover:text-emerald-700 p-1 rounded-full hover:bg-emerald-50 transition"
+                                title={`Message ${post.authorName}`}
+                            >
+                                <MessageIcon />
+                            </button>
+                        )}
+                    </div>
                     <p className="text-xs text-gray-500">
                         {new Date(post.createdAt).toLocaleDateString("en-US", {
                             month: "short",
@@ -503,6 +536,22 @@ function FlagIcon() {
         >
             <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
             <line x1="4" y1="22" x2="4" y2="15" />
+        </svg>
+    );
+}
+
+function MessageIcon() {
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
     );
 }

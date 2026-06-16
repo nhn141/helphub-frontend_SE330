@@ -8,7 +8,7 @@ import {
     sendMessage,
     MessageResponse,
     markMessageAsRead,
-    createMediaRecord, // Bổ sung import này
+    createMediaRecord,
 } from "@/lib/chat-api";
 
 interface ChatWindowProps {
@@ -23,8 +23,6 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
     const [content, setContent] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
-
-    // Thêm State quản lý file ảnh
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
@@ -117,7 +115,6 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
         };
     }, [conversationId, fetchHistory, getAccessToken]);
 
-    // Xử lý khi người dùng chọn ảnh
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const filesArray = Array.from(e.target.files);
@@ -130,7 +127,6 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
         }
     };
 
-    // Xóa ảnh khỏi danh sách chọn
     const removePreview = (index: number) => {
         setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
         setImagePreviews((prev) => {
@@ -143,7 +139,6 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Cho phép gửi nếu có nội dung HOẶC có ảnh
         if (!content.trim() && selectedFiles.length === 0) return;
 
         setIsSending(true);
@@ -152,7 +147,6 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
 
             const tempId = `temp-${Date.now()}`;
 
-            // Xây dựng UI tạm thời cho ảnh
             const optimisticMedia = selectedFiles.map((file, idx) => ({
                 id: `temp-media-${idx}`,
                 fileName: file.name,
@@ -178,7 +172,6 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
 
             setMessages((prev) => [...prev, optimisticMsg]);
 
-            // Dọn dẹp form ngay lập tức
             const currentText = content.trim();
             const currentFiles = [...selectedFiles];
             setContent("");
@@ -188,7 +181,6 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
 
             let uploadedMediaIds: string[] = [];
 
-            // Xử lý upload ảnh nếu có
             if (currentFiles.length > 0) {
                 const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
                 const uploadPreset =

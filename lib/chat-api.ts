@@ -70,13 +70,13 @@ export function getMyConversations(
 
 export function getOrCreatePrivateConversation(
     accessToken: string,
-    targetUserId: string,
+    userId: string,
 ): Promise<ConversationSummaryResponse> {
     return apiData<ConversationSummaryResponse>(
         `/api/v1/conversations/private`,
         {
             method: "POST",
-            body: JSON.stringify({ targetUserId: targetUserId }),
+            body: JSON.stringify({ receiverId: userId }),
         },
         accessToken,
     );

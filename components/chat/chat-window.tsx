@@ -13,6 +13,7 @@ import {
     addMemberToConversation,
     getMyConversations,
     ConversationSummaryResponse,
+    leaveConversation,
 } from "@/lib/chat-api";
 
 interface ChatWindowProps {
@@ -33,6 +34,8 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+    const [isLeaving, setIsLeaving] = useState(false);
     const [suggestedUsers, setSuggestedUsers] = useState<
         {
             id: string;
@@ -203,6 +206,25 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
         }
     };
 
+    const handleLeaveGroup = async () => {
+        const confirmLeave = window.confirm(
+            "Are you sure you want to leave this group?",
+        );
+        if (!confirmLeave) return;
+
+        setIsLeaving(true);
+        try {
+            const token = await getAccessToken();
+            await leaveConversation(token, conversationId);
+            window.location.href = "/messages";
+        } catch (error) {
+            console.error("Failed to leave group", error);
+            alert("Failed to leave group. Please try again.");
+        } finally {
+            setIsLeaving(false);
+        }
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const filesArray = Array.from(e.target.files);
@@ -349,20 +371,40 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                     <h3 className="font-bold text-slate-800 truncate">
                         {conversationDetail?.name || "Conversation Details"}
                     </h3>
-                    <p className="text-xs text-slate-400">
-                        {conversationDetail?.type === "GROUP"
-                            ? `${conversationDetail?.members?.length || 0} members`
-                            : `ID: ${conversationId.split("-")[0]}...`}
-                    </p>
+
+                    {/* CHỈNH SỬA: Bấm vào text để xem danh sách thành viên */}
+                    {conversationDetail?.type === "GROUP" ? (
+                        <button
+                            onClick={() => setIsMembersModalOpen(true)}
+                            className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded hover:bg-emerald-100 transition mt-0.5"
+                        >
+                            {conversationDetail?.members?.length || 0} members
+                            (View)
+                        </button>
+                    ) : (
+                        <p className="text-xs text-slate-400">
+                            ID: {conversationId.split("-")[0]}...
+                        </p>
+                    )}
                 </div>
 
+                {/* CHỈNH SỬA: Thêm nút Leave Group bên cạnh Add Member */}
                 {conversationDetail?.type === "GROUP" && (
-                    <button
-                        onClick={() => setIsAddModalOpen(true)}
-                        className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
-                    >
-                        <span>+</span> Add Member
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setIsAddModalOpen(true)}
+                            className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                        >
+                            <span>+</span> Add
+                        </button>
+                        <button
+                            onClick={handleLeaveGroup}
+                            disabled={isLeaving}
+                            className="bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-1.5 rounded-lg text-xs font-semibold transition disabled:opacity-50"
+                        >
+                            {isLeaving ? "..." : "Leave"}
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -620,6 +662,59 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                                     No new recent contacts to add.
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isMembersModalOpen && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm rounded-r-2xl">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-5 animate-in fade-in zoom-in-95 duration-150">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-slate-900">
+                                Group Members (
+                                {conversationDetail?.members?.length})
+                            </h3>
+                            <button
+                                onClick={() => setIsMembersModalOpen(false)}
+                                className="text-slate-400 hover:text-rose-500"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="max-h-64 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
+                            {conversationDetail?.members?.map((member) => (
+                                <div
+                                    key={member.userId}
+                                    className="flex items-center gap-3 p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition rounded-lg"
+                                >
+                                    <div className="size-10 bg-emerald-100 rounded-full flex items-center justify-center text-sm font-bold text-emerald-700 overflow-hidden shrink-0">
+                                        {member.avatarUrl ? (
+                                            <img
+                                                src={member.avatarUrl}
+                                                alt=""
+                                                className="size-full object-cover"
+                                            />
+                                        ) : (
+                                            member.fullName.charAt(0)
+                                        )}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-semibold text-slate-800 truncate">
+                                            {member.fullName}
+                                            {member.userId === profile?.id && (
+                                                <span className="ml-1 text-xs text-emerald-600 font-normal bg-emerald-50 px-1.5 py-0.5 rounded">
+                                                    You
+                                                </span>
+                                            )}
+                                        </p>
+                                        <p className="text-[10px] text-slate-500 truncate">
+                                            {member.email}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>

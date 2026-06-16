@@ -52,6 +52,8 @@ export function SocialPostCard({
     );
     const [isUpdating, setIsUpdating] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [isReportUserModalOpen, setIsReportUserModalOpen] = useState(false);
+
     const [isStartingChat, setIsStartingChat] = useState(false);
 
     const isAuthor = profile?.id === post.authorId;
@@ -228,14 +230,31 @@ export function SocialPostCard({
                             {post.authorName}
                         </h4>
                         {!isAuthor && (
-                            <button
-                                onClick={handleStartChat}
-                                disabled={isStartingChat}
-                                className="text-emerald-600 hover:text-emerald-700 p-1 rounded-full hover:bg-emerald-50 transition"
-                                title={`Message ${post.authorName}`}
-                            >
-                                <MessageIcon />
-                            </button>
+                            <div className="flex items-center gap-0.5">
+                                <button
+                                    onClick={handleStartChat}
+                                    disabled={isStartingChat}
+                                    className="text-emerald-600 hover:text-emerald-700 p-1.5 rounded-full hover:bg-emerald-50 transition"
+                                    title={`Message ${post.authorName}`}
+                                >
+                                    {isStartingChat ? (
+                                        <span className="flex size-4 items-center justify-center animate-spin text-[10px]">
+                                            ⏳
+                                        </span>
+                                    ) : (
+                                        <MessageIcon />
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() =>
+                                        setIsReportUserModalOpen(true)
+                                    }
+                                    className="text-rose-400 hover:text-rose-600 p-1.5 rounded-full hover:bg-rose-50 transition"
+                                    title={`Report ${post.authorName}`}
+                                >
+                                    <UserReportIcon />
+                                </button>
+                            </div>
                         )}
                     </div>
                     <p className="text-xs text-gray-500">
@@ -250,34 +269,36 @@ export function SocialPostCard({
                     </p>
                 </div>
 
-                {isAuthor ? (
-                    <>
+                <div className="ml-auto flex items-center">
+                    {isAuthor ? (
+                        <>
+                            <button
+                                onClick={() => setIsEditing(!isEditing)}
+                                disabled={isDeleting || isUpdating}
+                                title="Edit post"
+                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition disabled:opacity-50"
+                            >
+                                <EditIcon />
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={isDeleting || isUpdating}
+                                title="Delete post"
+                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition disabled:opacity-50"
+                            >
+                                <TrashIcon />
+                            </button>
+                        </>
+                    ) : (
                         <button
-                            onClick={() => setIsEditing(!isEditing)}
-                            disabled={isDeleting || isUpdating}
-                            title="Edit post"
-                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition disabled:opacity-50"
+                            onClick={() => setIsReportModalOpen(true)}
+                            title="Report post"
+                            className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition"
                         >
-                            <EditIcon />
+                            <FlagIcon />
                         </button>
-                        <button
-                            onClick={handleDelete}
-                            disabled={isDeleting || isUpdating}
-                            title="Delete post"
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition disabled:opacity-50"
-                        >
-                            <TrashIcon />
-                        </button>
-                    </>
-                ) : (
-                    <button
-                        onClick={() => setIsReportModalOpen(true)}
-                        title="Report post"
-                        className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition"
-                    >
-                        <FlagIcon />
-                    </button>
-                )}
+                    )}
+                </div>
             </div>
 
             {isEditing ? (
@@ -430,6 +451,14 @@ export function SocialPostCard({
                 targetType="POST"
                 title={`Post by ${post.authorName}`}
             />
+
+            <ReportModal
+                isOpen={isReportUserModalOpen}
+                onClose={() => setIsReportUserModalOpen(false)}
+                targetId={post.authorId}
+                targetType="USER"
+                title={`User: ${post.authorName}`}
+            />
         </div>
     );
 }
@@ -552,6 +581,25 @@ function MessageIcon() {
             strokeLinejoin="round"
         >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+    );
+}
+
+function UserReportIcon() {
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="8.5" cy="7" r="4"></circle>
+            <line x1="20" y1="8" x2="20" y2="14"></line>
+            <line x1="20" y1="18" x2="20.01" y2="18"></line>
         </svg>
     );
 }

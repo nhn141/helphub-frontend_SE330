@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { useAuth } from "@/components/auth-provider";
+import { NotificationBell } from "@/components/notification-bell";
 import { ROLE_LABELS } from "@/lib/support-request-ui";
 
 const navigation = [
@@ -98,6 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                                 Create request
                             </Link>
                         ) : null}
+                        <NotificationBell />
                         <div className="flex size-9 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
                             {getInitials(profile.fullName)}
                         </div>

@@ -11,8 +11,7 @@ import {
     createMediaRecord,
     getConversationById,
     addMemberToConversation,
-    searchUsers,
-    UserSearchResponse,
+    getMyConversations,
     ConversationSummaryResponse,
 } from "@/lib/chat-api";
 
@@ -34,11 +33,15 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [searchResults, setSearchResults] = useState<UserSearchResponse[]>(
-        [],
-    );
-    const [isSearching, setIsSearching] = useState(false);
+    const [suggestedUsers, setSuggestedUsers] = useState<
+        {
+            id: string;
+            fullName: string;
+            email: string;
+            avatarUrl: string | null;
+        }[]
+    >([]);
+    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [isAddingUser, setIsAddingUser] = useState<string | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -135,49 +138,62 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
     }, [conversationId, fetchHistoryAndDetail, getAccessToken]);
 
     useEffect(() => {
-        if (!searchQuery.trim()) {
-            setSearchResults([]);
-            return;
-        }
+        if (!isAddModalOpen) return;
 
-        const timer = setTimeout(async () => {
-            setIsSearching(true);
+        const loadSuggestions = async () => {
+            setIsLoadingSuggestions(true);
             try {
                 const token = await getAccessToken();
-                const results = await searchUsers(token, searchQuery);
+                const myInboxes = await getMyConversations(token);
+
+                const userMap = new Map<string, any>();
+
+                myInboxes.forEach((conv) => {
+                    if (conv.type === "PRIVATE" && conv.members) {
+                        const otherMember = conv.members.find(
+                            (m) => m.userId !== profile?.id,
+                        );
+                        if (otherMember) {
+                            userMap.set(otherMember.userId, {
+                                id: otherMember.userId,
+                                fullName: otherMember.fullName,
+                                email: otherMember.email,
+                                avatarUrl: otherMember.avatarUrl,
+                            });
+                        }
+                    }
+                });
 
                 const existingMemberIds =
                     conversationDetail?.members?.map((m) => m.userId) || [];
-                const filtered = results.filter(
-                    (u) =>
-                        u.id !== profile?.id &&
-                        !existingMemberIds.includes(u.id),
+                const finalFilteredUsers = Array.from(userMap.values()).filter(
+                    (user) => !existingMemberIds.includes(user.id),
                 );
 
-                setSearchResults(filtered);
-            } catch (e) {
-                console.error("Search failed", e);
+                setSuggestedUsers(finalFilteredUsers);
+            } catch (err) {
+                console.error("Failed to load suggested contacts", err);
             } finally {
-                setIsSearching(false);
+                setIsLoadingSuggestions(false);
             }
-        }, 500);
+        };
 
-        return () => clearTimeout(timer);
-    }, [searchQuery, getAccessToken, profile?.id, conversationDetail]);
+        loadSuggestions();
+    }, [isAddModalOpen, getAccessToken, profile?.id, conversationDetail]);
 
     const handleAddMember = async (userId: string) => {
         setIsAddingUser(userId);
         try {
             const token = await getAccessToken();
-            const updatedConv = await addMemberToConversation(
+            await addMemberToConversation(token, conversationId, userId);
+
+            const freshDetail = await getConversationById(
                 token,
                 conversationId,
-                userId,
             );
+            setConversationDetail(freshDetail);
 
-            setConversationDetail(updatedConv);
-            setSearchQuery("");
-            setSearchResults([]);
+            setSuggestedUsers((prev) => prev.filter((u) => u.id !== userId));
             setIsAddModalOpen(false);
         } catch (error) {
             console.error("Failed to add member", error);
@@ -544,7 +560,7 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-5 animate-in fade-in zoom-in-95 duration-150">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-bold text-slate-900">
-                                Add to Group
+                                Add Recent Contacts
                             </h3>
                             <button
                                 onClick={() => setIsAddModalOpen(false)}
@@ -554,73 +570,56 @@ export function ChatWindow({ conversationId, onBack }: ChatWindowProps) {
                             </button>
                         </div>
 
-                        <div className="relative">
-                            <input
-                                type="text"
-                                autoFocus
-                                placeholder="Search by name or email..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-
-                            <div className="mt-2 bg-white border border-slate-200 rounded-xl max-h-60 overflow-y-auto">
-                                {searchQuery.trim().length === 0 ? (
-                                    <div className="p-4 text-xs text-center text-slate-500">
-                                        Type to search users...
-                                    </div>
-                                ) : isSearching ? (
-                                    <div className="p-4 text-xs text-center text-slate-500">
-                                        Searching...
-                                    </div>
-                                ) : searchResults.length > 0 ? (
-                                    searchResults.map((user) => (
-                                        <div
-                                            key={user.id}
-                                            className="flex items-center justify-between p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition"
-                                        >
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <div className="size-8 bg-emerald-100 rounded-full flex items-center justify-center text-xs font-bold text-emerald-700 overflow-hidden shrink-0">
-                                                    {user.avatarUrl ? (
-                                                        <img
-                                                            src={user.avatarUrl}
-                                                            alt=""
-                                                            className="size-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        user.fullName.charAt(0)
-                                                    )}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-sm font-semibold text-slate-800 truncate">
-                                                        {user.fullName}
-                                                    </p>
-                                                    <p className="text-[10px] text-slate-500 truncate">
-                                                        {user.email}
-                                                    </p>
-                                                </div>
+                        <div className="mt-2 bg-white border border-slate-200 rounded-xl max-h-64 overflow-y-auto">
+                            {isLoadingSuggestions ? (
+                                <div className="p-4 text-xs text-center text-slate-500 animate-pulse">
+                                    Loading recent chats...
+                                </div>
+                            ) : suggestedUsers.length > 0 ? (
+                                suggestedUsers.map((user) => (
+                                    <div
+                                        key={user.id}
+                                        className="flex items-center justify-between p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition"
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="size-8 bg-emerald-100 rounded-full flex items-center justify-center text-xs font-bold text-emerald-700 overflow-hidden shrink-0">
+                                                {user.avatarUrl ? (
+                                                    <img
+                                                        src={user.avatarUrl}
+                                                        alt=""
+                                                        className="size-full object-cover"
+                                                    />
+                                                ) : (
+                                                    user.fullName.charAt(0)
+                                                )}
                                             </div>
-                                            <button
-                                                onClick={() =>
-                                                    handleAddMember(user.id)
-                                                }
-                                                disabled={
-                                                    isAddingUser === user.id
-                                                }
-                                                className="ml-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-md text-xs font-semibold disabled:opacity-50 transition shrink-0"
-                                            >
-                                                {isAddingUser === user.id
-                                                    ? "Adding..."
-                                                    : "Add"}
-                                            </button>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-semibold text-slate-800 truncate">
+                                                    {user.fullName}
+                                                </p>
+                                                <p className="text-[10px] text-slate-500 truncate">
+                                                    {user.email}
+                                                </p>
+                                            </div>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="p-4 text-xs text-center text-slate-500">
-                                        No users found.
+                                        <button
+                                            onClick={() =>
+                                                handleAddMember(user.id)
+                                            }
+                                            disabled={isAddingUser === user.id}
+                                            className="ml-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-md text-xs font-semibold disabled:opacity-50 transition shrink-0"
+                                        >
+                                            {isAddingUser === user.id
+                                                ? "Adding..."
+                                                : "Add"}
+                                        </button>
                                     </div>
-                                )}
-                            </div>
+                                ))
+                            ) : (
+                                <div className="p-4 text-xs text-center text-slate-500">
+                                    No new recent contacts to add.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

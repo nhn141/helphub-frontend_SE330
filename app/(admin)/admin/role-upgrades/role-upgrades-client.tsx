@@ -196,7 +196,12 @@ export function AdminRoleUpgradesClient() {
                                                     title={req.userId}
                                                 >
                                                     UID:{" "}
-                                                    {req.userId.substring(0, 8)}
+                                                    {req.userId
+                                                        ? req.userId.substring(
+                                                              0,
+                                                              8,
+                                                          )
+                                                        : "N/A"}
                                                     ...
                                                 </p>
                                                 <p className="text-xs text-slate-400 mt-1">

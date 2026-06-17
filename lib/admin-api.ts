@@ -1,7 +1,6 @@
 import { apiData } from "./api";
 import {
     SupportRequestSummary,
-    VolunteerAssignment,
     SupportRequestStatus,
 } from "./api";
 
@@ -30,36 +29,54 @@ export interface UserSummary {
     createdAt: string;
 }
 
-export interface DashboardStats {
-    total: number;
-    active: number;
-    inactive: number;
-}
-
-export interface UserDashboardStats extends DashboardStats {
-    byRole: Record<UserRole, number>;
+export interface UserDashboardStats {
+    totalUsers: number;
+    activeUsers: number;
+    inactiveUsers: number;
+    requesters: number;
+    volunteers: number;
+    collaborators: number;
+    admins: number;
 }
 
 export interface SupportRequestDashboardStats {
-    total: number;
-    byStatus: Record<SupportRequestStatus, number>;
+    totalSupportRequests: number;
+    pending: number;
+    approved: number;
+    inProgress: number;
+    rejected: number;
+    completed: number;
+    cancelled: number;
+}
+
+export interface CategoryDashboardItem {
+    categoryId: string;
+    categoryName: string;
+    supportRequestCount: number;
 }
 
 export interface CategoryDashboardStats {
-    total: number;
-    byStatus: { active: number; inactive: number };
-    mostUsed: { id: string; name: string; count: number }[];
+    totalCategories: number;
+    activeCategories: number;
+    categories: CategoryDashboardItem[];
 }
 
 export interface PostDashboardStats {
-    total: number;
-    byStatus: { active: number; inactive: number };
+    totalPosts: number;
+    active: number;
+    underReview: number;
+    hidden: number;
+    removed: number;
 }
 
 export interface ReportDashboardStats {
-    total: number;
-    byStatus: { pending: number; reviewed: number; resolved: number };
-    byTargetType: { support_request: number; post: number; user: number };
+    totalReports: number;
+    supportRequestReports: number;
+    postReports: number;
+    userReports: number;
+    pending: number;
+    reviewed: number;
+    resolved: number;
 }
 
 // Category types

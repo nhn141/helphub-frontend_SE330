@@ -1,71 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { LoadingBlock, PageHeading } from "@/components/support-ui";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    UserDashboardStats,
-    SupportRequestDashboardStats,
-    CategoryDashboardStats,
-} from "@/lib/admin-api";
-import {
-    PieChart,
-    Pie,
-    Cell,
-    BarChart,
     Bar,
+    BarChart,
+    Cell,
+    Legend,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    Tooltip,
     XAxis,
     YAxis,
-    Tooltip,
-    ResponsiveContainer,
-    Legend,
 } from "recharts";
 
-const MOCK_USER_STATS: UserDashboardStats = {
-    total: 1250,
-    active: 1120,
-    inactive: 130,
-    byRole: {
-        REQUESTER: 750,
-        VOLUNTEER: 380,
-        COLLABORATOR: 100,
-        ADMIN: 20,
-    },
-};
+import { useAuth } from "@/components/auth-provider";
+import { LoadingBlock, Notice, PageHeading } from "@/components/support-ui";
+import {
+    getAdminDashboardCategories,
+    getAdminDashboardPosts,
+    getAdminDashboardReports,
+    getAdminDashboardSupportRequests,
+    getAdminDashboardUsers,
+    type CategoryDashboardStats,
+    type PostDashboardStats,
+    type ReportDashboardStats,
+    type SupportRequestDashboardStats,
+    type UserDashboardStats,
+} from "@/lib/admin-api";
 
-const MOCK_SR_STATS: SupportRequestDashboardStats = {
-    total: 580,
-    byStatus: {
-        PENDING: 140,
-        APPROVED: 90,
-        IN_PROGRESS: 180,
-        COMPLETED: 170,
-        REJECTED: 0,
-        CANCELLED: 0,
-    },
+type ChartItem = {
+    name: string;
+    value: number;
+    color?: string;
 };
-
-const MOCK_CATEGORY_STATS: CategoryDashboardStats = {
-    total: 12,
-    byStatus: {
-        active: 10,
-        inactive: 2,
-    },
-    mostUsed: [
-        { id: "1", name: "Food & Supplies", count: 240 },
-        { id: "2", name: "Medical & Healthcare", count: 150 },
-        { id: "3", name: "Rescue & Evacuation", count: 110 },
-        { id: "4", name: "Education Support", count: 80 },
-    ],
-};
-
-const USER_GROWTH_DATA = [
-    { name: "Oct", users: 450 },
-    { name: "Nov", users: 620 },
-    { name: "Dec", users: 890 },
-    { name: "Jan", users: 1020 },
-    { name: "Feb", users: 1150 },
-    { name: "Mar", users: 1250 },
-];
 
 const COLORS = [
     "#10b981",
@@ -74,304 +42,335 @@ const COLORS = [
     "#8b5cf6",
     "#f43f5e",
     "#64748b",
+    "#14b8a6",
 ];
-const STATUS_COLORS = {
-    PENDING: "#f59e0b",
-    APPROVED: "#10b981",
-    IN_PROGRESS: "#3b82f6",
-    COMPLETED: "#64748b",
+
+const REQUEST_STATUS_COLORS: Record<string, string> = {
+    Pending: "#f59e0b",
+    Approved: "#10b981",
+    "In progress": "#3b82f6",
+    Completed: "#64748b",
+    Rejected: "#f43f5e",
+    Cancelled: "#94a3b8",
+};
+
+const REPORT_STATUS_COLORS: Record<string, string> = {
+    Pending: "#f59e0b",
+    Reviewed: "#3b82f6",
+    Resolved: "#10b981",
 };
 
 export function AdminDashboardClient() {
+    const { getAccessToken } = useAuth();
     const [loading, setLoading] = useState(true);
-
+    const [error, setError] = useState<string | null>(null);
     const [userStats, setUserStats] = useState<UserDashboardStats | null>(null);
     const [requestStats, setRequestStats] =
         useState<SupportRequestDashboardStats | null>(null);
     const [categoryStats, setCategoryStats] =
         useState<CategoryDashboardStats | null>(null);
+    const [postStats, setPostStats] = useState<PostDashboardStats | null>(null);
+    const [reportStats, setReportStats] =
+        useState<ReportDashboardStats | null>(null);
+
+    const loadDashboard = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const token = await getAccessToken();
+            const [users, requests, categories, posts, reports] =
+                await Promise.all([
+                    getAdminDashboardUsers(token),
+                    getAdminDashboardSupportRequests(token),
+                    getAdminDashboardCategories(token),
+                    getAdminDashboardPosts(token),
+                    getAdminDashboardReports(token),
+                ]);
+
+            setUserStats(users);
+            setRequestStats(requests);
+            setCategoryStats(categories);
+            setPostStats(posts);
+            setReportStats(reports);
+        } catch (loadError) {
+            setError(getErrorMessage(loadError));
+        } finally {
+            setLoading(false);
+        }
+    }, [getAccessToken]);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setUserStats(MOCK_USER_STATS);
-            setRequestStats(MOCK_SR_STATS);
-            setCategoryStats(MOCK_CATEGORY_STATS);
-            setLoading(false);
-        }, 600);
+        const timer = window.setTimeout(() => {
+            void loadDashboard();
+        }, 0);
 
-        return () => clearTimeout(timer);
-    }, []);
+        return () => window.clearTimeout(timer);
+    }, [loadDashboard]);
 
-    if (loading) return <LoadingBlock />;
+    const userRoleData = useMemo<ChartItem[]>(
+        () =>
+            userStats
+                ? [
+                      {
+                          name: "Requesters",
+                          value: userStats.requesters,
+                      },
+                      {
+                          name: "Volunteers",
+                          value: userStats.volunteers,
+                      },
+                      {
+                          name: "Collaborators",
+                          value: userStats.collaborators,
+                      },
+                      { name: "Admins", value: userStats.admins },
+                  ]
+                : [],
+        [userStats],
+    );
 
-    const userRoleData = userStats?.byRole
-        ? Object.entries(userStats.byRole).map(([key, value]) => ({
-              name: key,
-              value,
-          }))
-        : [];
+    const requestStatusData = useMemo<ChartItem[]>(
+        () =>
+            requestStats
+                ? [
+                      { name: "Pending", value: requestStats.pending },
+                      { name: "Approved", value: requestStats.approved },
+                      {
+                          name: "In progress",
+                          value: requestStats.inProgress,
+                      },
+                      { name: "Completed", value: requestStats.completed },
+                      { name: "Rejected", value: requestStats.rejected },
+                      { name: "Cancelled", value: requestStats.cancelled },
+                  ].map((item) => ({
+                      ...item,
+                      color: REQUEST_STATUS_COLORS[item.name],
+                  }))
+                : [],
+        [requestStats],
+    );
 
-    const requestStatusData = requestStats?.byStatus
-        ? Object.entries(requestStats.byStatus).map(([key, value]) => ({
-              name: key,
-              value,
-          }))
-        : [];
+    const categoryData = useMemo<ChartItem[]>(
+        () =>
+            categoryStats?.categories.map((category) => ({
+                name: category.categoryName,
+                value: category.supportRequestCount,
+            })) ?? [],
+        [categoryStats],
+    );
 
-    const categoryData = categoryStats?.mostUsed
-        ? categoryStats.mostUsed.map((cat) => ({
-              name: cat.name,
-              value: cat.count,
-          }))
-        : [];
+    const postStatusData = useMemo<ChartItem[]>(
+        () =>
+            postStats
+                ? [
+                      { name: "Active", value: postStats.active },
+                      { name: "Under review", value: postStats.underReview },
+                      { name: "Hidden", value: postStats.hidden },
+                      { name: "Removed", value: postStats.removed },
+                  ]
+                : [],
+        [postStats],
+    );
+
+    const reportStatusData = useMemo<ChartItem[]>(
+        () =>
+            reportStats
+                ? [
+                      {
+                          name: "Pending",
+                          value: reportStats.pending,
+                          color: REPORT_STATUS_COLORS.Pending,
+                      },
+                      {
+                          name: "Reviewed",
+                          value: reportStats.reviewed,
+                          color: REPORT_STATUS_COLORS.Reviewed,
+                      },
+                      {
+                          name: "Resolved",
+                          value: reportStats.resolved,
+                          color: REPORT_STATUS_COLORS.Resolved,
+                      },
+                  ]
+                : [],
+        [reportStats],
+    );
+
+    const reportTargetData = useMemo<ChartItem[]>(
+        () =>
+            reportStats
+                ? [
+                      {
+                          name: "Support requests",
+                          value: reportStats.supportRequestReports,
+                      },
+                      { name: "Posts", value: reportStats.postReports },
+                      { name: "Users", value: reportStats.userReports },
+                  ]
+                : [],
+        [reportStats],
+    );
+
+    if (loading) {
+        return <LoadingBlock message="Loading admin dashboard..." />;
+    }
 
     return (
         <div className="space-y-6 pb-10">
-            <div className="flex justify-between items-end">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <PageHeading
                     eyebrow="System Overview"
                     title="Admin Dashboard"
-                    description="High-level metrics and comprehensive statistics of the HelpHub network."
+                    description="Live metrics from the HelpHub backend."
                 />
+                <button
+                    type="button"
+                    onClick={() => void loadDashboard()}
+                    className="h-10 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                    Refresh
+                </button>
             </div>
 
-            <StatCard title="User Growth (Last 6 Months)">
-                <div className="h-72 w-full mt-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                            data={USER_GROWTH_DATA}
-                            margin={{
-                                top: 10,
-                                right: 10,
-                                left: -20,
-                                bottom: 0,
-                            }}
-                        >
-                            <XAxis
-                                dataKey="name"
-                                tick={{ fontSize: 12, fill: "#64748b" }}
-                                axisLine={false}
-                                tickLine={false}
-                            />
-                            <YAxis
-                                tick={{ fontSize: 12, fill: "#64748b" }}
-                                axisLine={false}
-                                tickLine={false}
-                            />
-                            <Tooltip
-                                cursor={{ fill: "#f8fafc" }}
-                                contentStyle={{
-                                    borderRadius: "12px",
-                                    border: "none",
-                                    boxShadow:
-                                        "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                                }}
-                            />
-                            <Bar
-                                dataKey="users"
-                                fill="#10b981"
-                                radius={[6, 6, 0, 0]}
-                                barSize={40}
-                            />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </StatCard>
+            {error ? (
+                <Notice type="error">
+                    {error}{" "}
+                    <button
+                        type="button"
+                        onClick={() => void loadDashboard()}
+                        className="font-semibold underline"
+                    >
+                        Try again
+                    </button>
+                </Notice>
+            ) : null}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {userStats && (
-                    <StatCard title="System Users">
-                        <div className="flex items-center justify-between mb-4 mt-2">
-                            <div>
-                                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                                    Total Accounts
+            {userStats && requestStats && categoryStats && postStats && reportStats ? (
+                <>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                        <KpiCard
+                            title="Users"
+                            value={userStats.totalUsers}
+                            detail={`${userStats.activeUsers} active`}
+                        />
+                        <KpiCard
+                            title="Support requests"
+                            value={requestStats.totalSupportRequests}
+                            detail={`${requestStats.pending} pending review`}
+                        />
+                        <KpiCard
+                            title="Categories"
+                            value={categoryStats.totalCategories}
+                            detail={`${categoryStats.activeCategories} active`}
+                        />
+                        <KpiCard
+                            title="Posts"
+                            value={postStats.totalPosts}
+                            detail={`${postStats.underReview} under review`}
+                        />
+                        <KpiCard
+                            title="Reports"
+                            value={reportStats.totalReports}
+                            detail={`${reportStats.pending} pending`}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                        <StatCard title="System Users">
+                            <div className="mt-2 flex items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                                        Total accounts
+                                    </p>
+                                    <span className="text-4xl font-black text-slate-800">
+                                        {userStats.totalUsers}
+                                    </span>
+                                </div>
+                                <div className="space-y-1 text-right">
+                                    <Badge tone="emerald">
+                                        Active: {userStats.activeUsers}
+                                    </Badge>
+                                    <Badge tone="rose">
+                                        Inactive: {userStats.inactiveUsers}
+                                    </Badge>
+                                </div>
+                            </div>
+
+                            <PiePanel data={userRoleData} />
+                        </StatCard>
+
+                        <StatCard title="Support Requests">
+                            <div className="mt-2">
+                                <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                                    Total submitted
                                 </p>
                                 <span className="text-4xl font-black text-slate-800">
-                                    {userStats.total}
+                                    {requestStats.totalSupportRequests}
                                 </span>
                             </div>
-                            <div className="text-right space-y-1">
-                                <div className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
-                                    Active: {userStats.active}
-                                </div>
-                                <div className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded">
-                                    Inactive: {userStats.inactive}
-                                </div>
-                            </div>
-                        </div>
 
-                        <div className="h-52 w-full mt-6 flex justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={userRoleData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={55}
-                                        outerRadius={75}
-                                        paddingAngle={4}
-                                        dataKey="value"
-                                    >
-                                        {userRoleData.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={
-                                                    COLORS[
-                                                        index % COLORS.length
-                                                    ]
-                                                }
-                                            />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{
-                                            borderRadius: "8px",
-                                            border: "none",
-                                            boxShadow:
-                                                "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                                        }}
-                                    />
-                                    <Legend
-                                        iconType="circle"
-                                        wrapperStyle={{
-                                            fontSize: "11px",
-                                            paddingTop: "10px",
-                                        }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </StatCard>
-                )}
+                            <PiePanel data={requestStatusData} />
+                        </StatCard>
 
-                {requestStats && (
-                    <StatCard title="Support Requests (SR)">
-                        <div className="flex items-center justify-between mb-4 mt-2">
-                            <div>
-                                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                                    Total Requests Submitted
+                        <StatCard title="Reports">
+                            <div className="mt-2">
+                                <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                                    Moderation queue
                                 </p>
                                 <span className="text-4xl font-black text-slate-800">
-                                    {requestStats.total}
+                                    {reportStats.totalReports}
                                 </span>
                             </div>
-                        </div>
 
-                        <div className="h-52 w-full mt-6 flex justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={requestStatusData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={55}
-                                        outerRadius={75}
-                                        paddingAngle={4}
-                                        dataKey="value"
-                                    >
-                                        {requestStatusData.map(
-                                            (entry, index) => (
-                                                <Cell
-                                                    key={`cell-${index}`}
-                                                    fill={
-                                                        STATUS_COLORS[
-                                                            entry.name as keyof typeof STATUS_COLORS
-                                                        ] ||
-                                                        COLORS[
-                                                            index %
-                                                                COLORS.length
-                                                        ]
-                                                    }
-                                                />
-                                            ),
-                                        )}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{
-                                            borderRadius: "8px",
-                                            border: "none",
-                                            boxShadow:
-                                                "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                                        }}
-                                    />
-                                    <Legend
-                                        iconType="circle"
-                                        wrapperStyle={{
-                                            fontSize: "11px",
-                                            paddingTop: "10px",
-                                        }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </StatCard>
-                )}
+                            <PiePanel data={reportStatusData} />
+                        </StatCard>
+                    </div>
 
-                {categoryStats && (
-                    <StatCard title="Relief Categories">
-                        <div className="flex items-center justify-between mb-4 mt-2">
-                            <div>
-                                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                                    Total Categories
-                                </p>
-                                <span className="text-4xl font-black text-slate-800">
-                                    {categoryStats.total}
-                                </span>
-                            </div>
-                            <div className="text-right space-y-1">
-                                <div className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
-                                    Active: {categoryStats.byStatus.active}
-                                </div>
-                                <div className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded">
-                                    Inactive: {categoryStats.byStatus.inactive}
-                                </div>
-                            </div>
-                        </div>
+                    <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                        <StatCard title="Requests by Category">
+                            <BarPanel
+                                data={categoryData}
+                                emptyMessage="No support requests by category yet."
+                            />
+                        </StatCard>
 
-                        <div className="h-52 w-full mt-6 flex justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={categoryData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={0}
-                                        outerRadius={75}
-                                        paddingAngle={2}
-                                        dataKey="value"
-                                    >
-                                        {categoryData.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={
-                                                    COLORS[
-                                                        index % COLORS.length
-                                                    ]
-                                                }
-                                            />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{
-                                            borderRadius: "8px",
-                                            border: "none",
-                                            boxShadow:
-                                                "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                                        }}
-                                    />
-                                    <Legend
-                                        iconType="circle"
-                                        wrapperStyle={{
-                                            fontSize: "11px",
-                                            paddingTop: "10px",
-                                        }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </StatCard>
-                )}
-            </div>
+                        <StatCard title="Posts by Status">
+                            <BarPanel
+                                data={postStatusData}
+                                emptyMessage="No post data yet."
+                            />
+                        </StatCard>
+
+                        <StatCard title="Reports by Target">
+                            <BarPanel
+                                data={reportTargetData}
+                                emptyMessage="No report target data yet."
+                            />
+                        </StatCard>
+                    </div>
+                </>
+            ) : null}
+        </div>
+    );
+}
+
+function KpiCard({
+    title,
+    value,
+    detail,
+}: {
+    title: string;
+    value: number;
+    detail: string;
+}) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                {title}
+            </p>
+            <p className="mt-2 text-3xl font-black text-slate-900">{value}</p>
+            <p className="mt-1 text-xs font-medium text-slate-500">{detail}</p>
         </div>
     );
 }
@@ -384,11 +383,144 @@ function StatCard({
     children: React.ReactNode;
 }) {
     return (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col hover:shadow-md transition duration-300">
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3">
+        <section className="flex min-h-[360px] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6">
+            <h3 className="border-b border-slate-100 pb-3 text-xs font-bold uppercase tracking-wider text-slate-800">
                 {title}
             </h3>
-            <div className="flex-1">{children}</div>
+            <div className="min-h-0 flex-1">{children}</div>
+        </section>
+    );
+}
+
+function PiePanel({ data }: { data: ChartItem[] }) {
+    const visibleData = data.filter((item) => item.value > 0);
+
+    if (!visibleData.length) {
+        return <EmptyChart message="No data to display yet." />;
+    }
+
+    return (
+        <div className="mt-6 h-56 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                    <Pie
+                        data={visibleData}
+                        cx="50%"
+                        cy="50%"
+                        dataKey="value"
+                        innerRadius={55}
+                        outerRadius={78}
+                        paddingAngle={4}
+                    >
+                        {visibleData.map((entry, index) => (
+                            <Cell
+                                key={entry.name}
+                                fill={
+                                    entry.color ??
+                                    COLORS[index % COLORS.length]
+                                }
+                            />
+                        ))}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Legend
+                        iconType="circle"
+                        wrapperStyle={{
+                            fontSize: "11px",
+                            paddingTop: "10px",
+                        }}
+                    />
+                </PieChart>
+            </ResponsiveContainer>
         </div>
     );
+}
+
+function BarPanel({
+    data,
+    emptyMessage,
+}: {
+    data: ChartItem[];
+    emptyMessage: string;
+}) {
+    const visibleData = data.filter((item) => item.value > 0);
+
+    if (!visibleData.length) {
+        return <EmptyChart message={emptyMessage} />;
+    }
+
+    return (
+        <div className="mt-6 h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                    data={visibleData}
+                    margin={{ top: 8, right: 8, bottom: 0, left: -24 }}
+                >
+                    <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <YAxis
+                        allowDecimals={false}
+                        tick={{ fontSize: 11, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={36}>
+                        {visibleData.map((entry, index) => (
+                            <Cell
+                                key={entry.name}
+                                fill={
+                                    entry.color ??
+                                    COLORS[index % COLORS.length]
+                                }
+                            />
+                        ))}
+                    </Bar>
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+}
+
+function EmptyChart({ message }: { message: string }) {
+    return (
+        <div className="mt-6 flex h-56 items-center justify-center rounded-xl bg-slate-50 px-4 text-center text-sm text-slate-500">
+            {message}
+        </div>
+    );
+}
+
+function Badge({
+    tone,
+    children,
+}: {
+    tone: "emerald" | "rose";
+    children: React.ReactNode;
+}) {
+    const className =
+        tone === "emerald"
+            ? "bg-emerald-50 text-emerald-700"
+            : "bg-rose-50 text-rose-700";
+
+    return (
+        <div className={`rounded px-2 py-1 text-[11px] font-bold ${className}`}>
+            {children}
+        </div>
+    );
+}
+
+const tooltipStyle = {
+    border: "none",
+    borderRadius: "10px",
+    boxShadow: "0 8px 24px rgb(15 23 42 / 0.12)",
+} satisfies React.CSSProperties;
+
+function getErrorMessage(error: unknown): string {
+    return error instanceof Error
+        ? error.message
+        : "Unable to load admin dashboard.";
 }

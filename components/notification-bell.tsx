@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Client } from "@stomp/stompjs";
-import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -16,7 +15,6 @@ import {
 
 export function NotificationBell() {
     const { getAccessToken } = useAuth();
-    const router = useRouter();
     const [notifications, setNotifications] = useState<NotificationResponse[]>(
         [],
     );
@@ -183,10 +181,10 @@ export function NotificationBell() {
             await handleMarkAsRead(notification);
 
             if (href) {
-                router.push(href);
+                navigateWithReload(href);
             }
         },
-        [handleMarkAsRead, router],
+        [handleMarkAsRead],
     );
 
     // Mark all notifications as read
@@ -380,20 +378,46 @@ export function NotificationBell() {
 function getNotificationHref(
     notification: NotificationResponse,
 ): string | null {
+    const referenceHref = getHrefFromReference(notification);
+
+    if (referenceHref) {
+        return referenceHref;
+    }
+
     const actionHref = getHrefFromActionUrl(notification.actionUrl);
 
     if (actionHref) {
         return actionHref;
     }
 
+    return getDefaultHrefForReferenceType(notification.referenceType);
+}
+
+function getHrefFromReference(
+    notification: NotificationResponse,
+): string | null {
+    const referenceId = notification.referenceId?.trim();
+
     switch (notification.referenceType) {
         case "SUPPORT_REQUEST":
         case "VOLUNTEER_ASSIGNMENT":
         case "SUPPORT_NEED":
         case "CONTRIBUTION":
-            return notification.referenceId
-                ? `/support-requests/${encodePathSegment(notification.referenceId)}`
-                : "/support-requests";
+            return referenceId
+                ? `/support-requests/${encodePathSegment(referenceId)}`
+                : null;
+        default:
+            return null;
+    }
+}
+
+function getDefaultHrefForReferenceType(referenceType: string): string | null {
+    switch (referenceType) {
+        case "SUPPORT_REQUEST":
+        case "VOLUNTEER_ASSIGNMENT":
+        case "SUPPORT_NEED":
+        case "CONTRIBUTION":
+            return "/support-requests";
         case "MESSAGE":
         case "CONVERSATION":
             return "/messages";
@@ -406,6 +430,20 @@ function getNotificationHref(
         default:
             return null;
     }
+}
+
+function navigateWithReload(href: string) {
+    const targetUrl = new URL(href, window.location.origin);
+
+    if (
+        targetUrl.pathname === window.location.pathname &&
+        targetUrl.search === window.location.search
+    ) {
+        window.location.reload();
+        return;
+    }
+
+    window.location.assign(`${targetUrl.pathname}${targetUrl.search}`);
 }
 
 function getHrefFromActionUrl(actionUrl: string | null): string | null {

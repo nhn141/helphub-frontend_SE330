@@ -113,7 +113,8 @@ export function SupportRequestTable({
                                         </div>
                                     )}
 
-                                    {req.status === "APPROVED" && (
+                                    {(req.status === "APPROVED" ||
+                                        req.status === "IN_PROGRESS") && (
                                         <select
                                             disabled={isProcessing}
                                             onChange={(e) =>
@@ -140,11 +141,10 @@ export function SupportRequestTable({
                                     )}
 
                                     {req.status !== "PENDING" &&
-                                        req.status !== "APPROVED" && (
+                                        req.status !== "APPROVED" &&
+                                        req.status !== "IN_PROGRESS" && (
                                             <span className="text-xs italic text-slate-400">
-                                                {req.status === "IN_PROGRESS"
-                                                    ? "Assigned & Active"
-                                                    : "Action completed"}
+                                                Action completed
                                             </span>
                                         )}
                                 </td>

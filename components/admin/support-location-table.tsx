@@ -51,7 +51,11 @@ export function SupportLocationTable({
                                     </p>
                                     {(loc.bankName ||
                                         loc.bankAccountNumber) && (
-                                        <div className="mt-2 text-[11px] bg-slate-100 p-1.5 rounded text-slate-600 font-medium inline-block">
+                                        <div className="mt-2 inline-block rounded bg-slate-100 p-1.5 text-[0px] font-medium text-slate-600">
+                                            <span className="text-[11px]">
+                                                Bank: {loc.bankName || "N/A"} -{" "}
+                                                {loc.bankAccountNumber || "N/A"}
+                                            </span>
                                             🏦 {loc.bankName} -{" "}
                                             {loc.bankAccountNumber}
                                         </div>
@@ -62,7 +66,10 @@ export function SupportLocationTable({
                                     <p className="text-sm text-slate-700">
                                         {loc.address}
                                     </p>
-                                    <p className="text-xs font-semibold text-emerald-700 mt-1">
+                                    <p className="mt-1 text-[0px] font-semibold text-emerald-700">
+                                        <span className="text-xs">
+                                            Phone: {loc.contactPhone}
+                                        </span>
                                         📞 {loc.contactPhone}
                                     </p>
                                     <p className="text-[10px] text-slate-400 mt-1 font-mono">

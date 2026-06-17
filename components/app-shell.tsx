@@ -6,9 +6,17 @@ import { useState, type ReactNode } from "react";
 
 import { useAuth } from "@/components/auth-provider";
 import { NotificationBell } from "@/components/notification-bell";
+import type { UserRole } from "@/lib/api";
 import { ROLE_LABELS } from "@/lib/support-request-ui";
 
-const navigation = [
+type NavigationItem = {
+    href: string;
+    label: string;
+    icon: () => ReactNode;
+    roles?: UserRole[];
+};
+
+const navigation: NavigationItem[] = [
     {
         href: "/dashboard",
         label: "Overview",
@@ -18,6 +26,12 @@ const navigation = [
         href: "/support-requests",
         label: "Support requests",
         icon: SupportIcon,
+    },
+    {
+        href: "/support-locations",
+        label: "Support locations",
+        icon: LocationHubIcon,
+        roles: ["ADMIN", "COLLABORATOR"],
     },
     {
         href: "/social",
@@ -43,6 +57,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     pathname={pathname}
                     profileName={profile.fullName}
                     profileRole={ROLE_LABELS[profile.role]}
+                    profileRoleValue={profile.role}
                     onLogout={logout}
                 />
             </aside>
@@ -60,6 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                             pathname={pathname}
                             profileName={profile.fullName}
                             profileRole={ROLE_LABELS[profile.role]}
+                            profileRoleValue={profile.role}
                             onNavigate={() => setMobileMenuOpen(false)}
                             onLogout={logout}
                         />
@@ -120,12 +136,14 @@ function SidebarContent({
     pathname,
     profileName,
     profileRole,
+    profileRoleValue,
     onNavigate,
     onLogout,
 }: {
     pathname: string;
     profileName: string;
     profileRole: string;
+    profileRoleValue: UserRole;
     onNavigate?: () => void;
     onLogout: () => void;
 }) {
@@ -144,29 +162,35 @@ function SidebarContent({
             </div>
 
             <nav className="flex-1 space-y-1 px-3 py-6">
-                {navigation.map((item) => {
-                    const active =
-                        pathname === item.href ||
-                        (item.href !== "/dashboard" &&
-                            pathname.startsWith(item.href));
-                    const Icon = item.icon;
+                {navigation
+                    .filter(
+                        (item) =>
+                            !item.roles ||
+                            item.roles.includes(profileRoleValue),
+                    )
+                    .map((item) => {
+                        const active =
+                            pathname === item.href ||
+                            (item.href !== "/dashboard" &&
+                                pathname.startsWith(item.href));
+                        const Icon = item.icon;
 
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={onNavigate}
-                            className={`flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition ${
-                                active
-                                    ? "bg-emerald-400 text-[#10261f]"
-                                    : "text-white/70 hover:bg-white/8 hover:text-white"
-                            }`}
-                        >
-                            <Icon />
-                            {item.label}
-                        </Link>
-                    );
-                })}
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={onNavigate}
+                                className={`flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition ${
+                                    active
+                                        ? "bg-emerald-400 text-[#10261f]"
+                                        : "text-white/70 hover:bg-white/8 hover:text-white"
+                                }`}
+                            >
+                                <Icon />
+                                {item.label}
+                            </Link>
+                        );
+                    })}
             </nav>
 
             <div className="border-t border-white/10 p-4">
@@ -214,6 +238,10 @@ function getPageTitle(pathname: string): string {
 
     if (pathname.startsWith("/support-requests")) {
         return "Support requests";
+    }
+
+    if (pathname.startsWith("/support-locations")) {
+        return "Support locations";
     }
 
     if (pathname.startsWith("/social")) {
@@ -275,6 +303,25 @@ function SupportIcon() {
                 strokeLinejoin="round"
             />
             <path d="M8.5 12h7M12 8.5v7" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+function LocationHubIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="size-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M12 21s6-5.4 6-11a6 6 0 0 0-12 0c0 5.6 6 11 6 11Z" />
+            <circle cx="12" cy="10" r="2.3" />
+            <path d="M5 21h14" />
         </svg>
     );
 }

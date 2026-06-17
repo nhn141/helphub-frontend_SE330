@@ -13,9 +13,12 @@ import {
   PageHeading,
 } from "@/components/support-ui";
 import {
+  assignSupportLocation,
   getMySupportRequests,
   getMyVolunteerAssignments,
+  getSupportLocations,
   getSupportRequests,
+  type SupportLocationSummary,
   type SupportRequestStatus,
   type SupportRequestSummary,
   type VolunteerAssignment,
@@ -42,6 +45,10 @@ export default function SupportRequestsClient() {
   const [allRequests, setAllRequests] = useState<SupportRequestSummary[]>([]);
   const [myRequests, setMyRequests] = useState<SupportRequestSummary[]>([]);
   const [assignments, setAssignments] = useState<VolunteerAssignment[]>([]);
+  const [locations, setLocations] = useState<SupportLocationSummary[]>([]);
+  const [selectedLocationByRequest, setSelectedLocationByRequest] = useState<
+    Record<string, string>
+  >({});
   const [view, setView] = useState<ViewMode>("primary");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(
     profile.role === "ADMIN" || profile.role === "COLLABORATOR"
@@ -51,6 +58,10 @@ export default function SupportRequestsClient() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [assigningRequestId, setAssigningRequestId] = useState<string | null>(
+    null,
+  );
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -74,7 +85,12 @@ export default function SupportRequestsClient() {
         setAllRequests(community);
         setAssignments(myAssignments);
       } else {
-        setAllRequests(await getSupportRequests(token));
+        const [requests, supportLocations] = await Promise.all([
+          getSupportRequests(token),
+          getSupportLocations(token),
+        ]);
+        setAllRequests(requests);
+        setLocations(supportLocations);
       }
     } catch (loadError) {
       setError(getErrorMessage(loadError));
@@ -144,6 +160,32 @@ export default function SupportRequestsClient() {
 
   const showAssignments =
     profile.role === "VOLUNTEER" && view === "secondary";
+  const canAssignLocations =
+    profile.role === "ADMIN" || profile.role === "COLLABORATOR";
+
+  async function handleAssignLocation(
+    supportRequestId: string,
+    supportLocationId: string,
+  ) {
+    if (!supportLocationId) {
+      return;
+    }
+
+    setAssigningRequestId(supportRequestId);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const token = await getAccessToken();
+      await assignSupportLocation(token, supportRequestId, supportLocationId);
+      setSuccess("Support location assigned successfully.");
+      await loadData();
+    } catch (assignError) {
+      setError(getErrorMessage(assignError));
+    } finally {
+      setAssigningRequestId(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -175,6 +217,7 @@ export default function SupportRequestsClient() {
           </button>
         </Notice>
       ) : null}
+      {success ? <Notice type="success">{success}</Notice> : null}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         {(profile.role === "REQUESTER" || profile.role === "VOLUNTEER") && (
@@ -282,7 +325,35 @@ export default function SupportRequestsClient() {
       ) : visibleRequests.length ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visibleRequests.map((request) => (
-            <SupportRequestCard key={request.id} request={request} />
+            <SupportRequestCard
+              key={request.id}
+              request={request}
+              footer={
+                canAssignLocations &&
+                (request.status === "APPROVED" ||
+                  request.status === "IN_PROGRESS") ? (
+                  <QuickAssignLocation
+                    disabled={assigningRequestId === request.id}
+                    locations={locations}
+                    selectedLocationId={
+                      selectedLocationByRequest[request.id] ?? ""
+                    }
+                    onSelectedLocationChange={(locationId) =>
+                      setSelectedLocationByRequest((current) => ({
+                        ...current,
+                        [request.id]: locationId,
+                      }))
+                    }
+                    onAssign={() =>
+                      void handleAssignLocation(
+                        request.id,
+                        selectedLocationByRequest[request.id] ?? "",
+                      )
+                    }
+                  />
+                ) : undefined
+              }
+            />
           ))}
         </div>
       ) : (
@@ -297,6 +368,59 @@ export default function SupportRequestsClient() {
           actionLabel="Create request"
         />
       )}
+    </div>
+  );
+}
+
+function QuickAssignLocation({
+  locations,
+  selectedLocationId,
+  disabled,
+  onSelectedLocationChange,
+  onAssign,
+}: {
+  locations: SupportLocationSummary[];
+  selectedLocationId: string;
+  disabled: boolean;
+  onSelectedLocationChange: (locationId: string) => void;
+  onAssign: () => void;
+}) {
+  if (!locations.length) {
+    return (
+      <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-700">
+        No active support locations are available.
+      </p>
+    );
+  }
+
+  return (
+    <div className="rounded-xl bg-slate-50 p-3">
+      <label>
+        <span className="mb-1.5 block text-xs font-semibold text-slate-600">
+          Assign support location
+        </span>
+        <select
+          value={selectedLocationId}
+          onChange={(event) => onSelectedLocationChange(event.target.value)}
+          disabled={disabled}
+          className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-700 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100"
+        >
+          <option value="">Select location</option>
+          {locations.map((location) => (
+            <option key={location.id} value={location.id}>
+              {location.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="button"
+        disabled={!selectedLocationId || disabled}
+        onClick={onAssign}
+        className="mt-2 h-9 w-full rounded-lg bg-slate-950 text-xs font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+      >
+        {disabled ? "Assigning..." : "Assign location"}
+      </button>
     </div>
   );
 }

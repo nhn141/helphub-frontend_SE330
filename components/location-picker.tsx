@@ -413,7 +413,7 @@ export function LocationPicker({
                 ) : null}
             </div>
 
-            <div className="relative mt-3 h-[300px] overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+            <div className="relative mt-3 h-[240px] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-[300px]">
                 <div ref={mapContainerRef} className="h-full w-full" />
                 {!mapReady ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-slate-50 text-sm text-slate-500">

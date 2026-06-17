@@ -177,6 +177,9 @@ export default function SupportRequestDetailClient({
       (profile.role === "VOLUNTEER" &&
         myAssignment?.status === "ACCEPTED"));
   const canViewAssignments = isReviewer || isOwner;
+  const canAssignLocation =
+    isReviewer &&
+    (request.status === "APPROVED" || request.status === "IN_PROGRESS");
 
   return (
     <div className="space-y-6">
@@ -363,11 +366,11 @@ export default function SupportRequestDetailClient({
                 </div>
               ) : null}
 
-              {request.status === "APPROVED" ? (
+              {canAssignLocation ? (
                 <div className="mt-4">
                   <label>
                     <span className="mb-1.5 block text-xs font-semibold text-slate-700">
-                      Assigned support location
+                      Support location
                     </span>
                     <select
                       value={selectedLocationId}
@@ -386,7 +389,12 @@ export default function SupportRequestDetailClient({
                   </label>
                   <button
                     type="button"
-                    disabled={!selectedLocationId || busyAction !== null}
+                    disabled={
+                      !selectedLocationId ||
+                      selectedLocationId ===
+                        (request.assignedSupportLocationId ?? "") ||
+                      busyAction !== null
+                    }
                     onClick={() =>
                       void runAction(
                         "location",
@@ -403,7 +411,9 @@ export default function SupportRequestDetailClient({
                   >
                     {busyAction === "location"
                       ? "Updating..."
-                      : "Assign support location"}
+                      : request.assignedSupportLocationId
+                        ? "Update support location"
+                        : "Assign support location"}
                   </button>
                   {!locations.length ? (
                     <p className="mt-2 text-xs leading-5 text-amber-700">
@@ -414,10 +424,9 @@ export default function SupportRequestDetailClient({
               ) : null}
 
               {request.status !== "PENDING" &&
-              request.status !== "APPROVED" ? (
+              !canAssignLocation ? (
                 <p className="mt-3 text-sm leading-6 text-slate-500">
-                  This request is already in progress or closed and can no
-                  longer be reviewed.
+                  This request is closed and can no longer be reviewed.
                 </p>
               ) : null}
             </section>

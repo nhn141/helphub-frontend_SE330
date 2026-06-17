@@ -24,7 +24,6 @@ const navigation = [
         label: "Community Feed",
         icon: UsersIcon,
     },
-    // BỔ SUNG MESSAGES VÀO ĐÂY
     {
         href: "/messages",
         label: "Messages",
@@ -100,9 +99,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                             </Link>
                         ) : null}
                         <NotificationBell />
-                        <div className="flex size-9 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
+                        <Link
+                            href="/profile"
+                            className="flex size-9 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-800 hover:bg-emerald-200 transition"
+                        >
                             {getInitials(profile.fullName)}
-                        </div>
+                        </Link>
                     </div>
                 </header>
 
@@ -175,10 +177,18 @@ function SidebarContent({
                     <p className="mt-0.5 truncate text-xs text-white/55">
                         {profileRole}
                     </p>
+                    <Link
+                        href="/profile"
+                        onClick={onNavigate}
+                        className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500/10 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/20 transition"
+                    >
+                        <UserIcon />
+                        Profile
+                    </Link>
                     <button
                         type="button"
                         onClick={onLogout}
-                        className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/12 text-xs font-semibold text-white/75 hover:bg-white/8 hover:text-white"
+                        className="mt-2 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/12 text-xs font-semibold text-white/75 hover:bg-white/8 hover:text-white transition"
                     >
                         <LogoutIcon />
                         Sign out
@@ -210,9 +220,12 @@ function getPageTitle(pathname: string): string {
         return "Community Feed";
     }
 
-    // BỔ SUNG TIÊU ĐỀ CHO MESSAGES
     if (pathname.startsWith("/messages")) {
         return "Messages";
+    }
+
+    if (pathname.startsWith("/profile")) {
+        return "User Profile";
     }
 
     return "Overview";
@@ -286,7 +299,6 @@ function UsersIcon() {
     );
 }
 
-// BỔ SUNG ICON CHO MESSAGES
 function MessageIcon() {
     return (
         <svg
@@ -349,6 +361,24 @@ function LogoutIcon() {
             strokeLinejoin="round"
         >
             <path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9" />
+        </svg>
+    );
+}
+
+function UserIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="size-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+            <circle cx="14" cy="7" r="4" />
         </svg>
     );
 }

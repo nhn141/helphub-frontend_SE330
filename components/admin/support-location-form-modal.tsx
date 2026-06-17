@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 
+import { LocationPicker } from "@/components/location-picker";
 import { SupportLocation } from "@/lib/admin-api";
 
 interface SupportLocationFormModalProps {
@@ -14,9 +15,6 @@ interface SupportLocationFormModalProps {
     isSubmitting: boolean;
 }
 
-const DEFAULT_LATITUDE = 10;
-const DEFAULT_LONGITUDE = 100;
-
 export function SupportLocationFormModal({
     isOpen,
     onClose,
@@ -28,16 +26,23 @@ export function SupportLocationFormModal({
     const [description, setDescription] = useState("");
     const [address, setAddress] = useState("");
     const [contactPhone, setContactPhone] = useState("");
+    const [latitude, setLatitude] = useState("");
+    const [longitude, setLongitude] = useState("");
     const [bankName, setBankName] = useState("");
     const [bankAccountNumber, setBankAccountNumber] = useState("");
+    const [locationError, setLocationError] = useState<string | null>(null);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
+            setLocationError(null);
+
             if (initialData) {
                 setName(initialData.name || "");
                 setDescription(initialData.description || "");
                 setAddress(initialData.address || "");
                 setContactPhone(initialData.contactPhone || "");
+                setLatitude(initialData.latitude?.toString() || "");
+                setLongitude(initialData.longitude?.toString() || "");
                 setBankName(initialData.bankName || "");
                 setBankAccountNumber(initialData.bankAccountNumber || "");
             } else {
@@ -45,6 +50,8 @@ export function SupportLocationFormModal({
                 setDescription("");
                 setAddress("");
                 setContactPhone("");
+                setLatitude("");
+                setLongitude("");
                 setBankName("");
                 setBankAccountNumber("");
             }
@@ -58,13 +65,28 @@ export function SupportLocationFormModal({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        const parsedLatitude = Number(latitude);
+        const parsedLongitude = Number(longitude);
+
+        if (
+            !latitude.trim() ||
+            !longitude.trim() ||
+            !Number.isFinite(parsedLatitude) ||
+            !Number.isFinite(parsedLongitude)
+        ) {
+            setLocationError(
+                "Search for this support location or select a point on the map.",
+            );
+            return;
+        }
+
         await onSave({
             name: name.trim(),
             description: description.trim(),
             address: address.trim(),
             contactPhone: contactPhone.trim(),
-            latitude: DEFAULT_LATITUDE,
-            longitude: DEFAULT_LONGITUDE,
+            latitude: parsedLatitude,
+            longitude: parsedLongitude,
             bankName: bankName.trim() || null,
             bankAccountNumber: bankAccountNumber.trim() || null,
         });
@@ -148,24 +170,25 @@ export function SupportLocationFormModal({
 
                     <div className="space-y-4 pt-2">
                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-t pt-4">
-                            Address
+                            Address & Location
                         </h4>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="col-span-2">
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Full Address *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={address}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    disabled={isSubmitting}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                    placeholder="123 Main St, City, Country"
-                                />
-                            </div>
-                        </div>
+                        <LocationPicker
+                            required
+                            disabled={isSubmitting}
+                            label="Support location"
+                            value={{ address, latitude, longitude }}
+                            onChange={(location) => {
+                                setLocationError(null);
+                                setAddress(location.address);
+                                setLatitude(location.latitude);
+                                setLongitude(location.longitude);
+                            }}
+                        />
+                        {locationError ? (
+                            <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
+                                {locationError}
+                            </p>
+                        ) : null}
                     </div>
 
                     <div className="space-y-4 pt-2">
@@ -221,7 +244,9 @@ export function SupportLocationFormModal({
                                 isSubmitting ||
                                 !name?.trim() ||
                                 !address?.trim() ||
-                                !contactPhone?.trim()
+                                !contactPhone?.trim() ||
+                                !latitude.trim() ||
+                                !longitude.trim()
                             }
                             className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition"
                         >

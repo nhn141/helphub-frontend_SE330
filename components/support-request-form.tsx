@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 
 import { useAuth } from "@/components/auth-provider";
+import { LocationPicker } from "@/components/location-picker";
 import { Notice } from "@/components/support-ui";
 import {
   getCategories,
@@ -15,6 +16,8 @@ export type SupportRequestFormValue = {
   description: string;
   categoryId: string;
   address: string;
+  latitude: string;
+  longitude: string;
 };
 
 const emptyForm: SupportRequestFormValue = {
@@ -22,10 +25,9 @@ const emptyForm: SupportRequestFormValue = {
   description: "",
   categoryId: "",
   address: "",
+  latitude: "",
+  longitude: "",
 };
-
-const DEFAULT_LATITUDE = 10;
-const DEFAULT_LONGITUDE = 100;
 
 export function SupportRequestForm({
   initialValue = emptyForm,
@@ -82,6 +84,19 @@ export function SupportRequestForm({
     event.preventDefault();
     setError(null);
 
+    const latitude = Number(form.latitude);
+    const longitude = Number(form.longitude);
+
+    if (
+      !form.latitude.trim() ||
+      !form.longitude.trim() ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    ) {
+      setError("Please search for a location or select a point on the map.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -89,8 +104,8 @@ export function SupportRequestForm({
         title: form.title.trim(),
         description: form.description.trim(),
         categoryId: form.categoryId,
-        latitude: DEFAULT_LATITUDE,
-        longitude: DEFAULT_LONGITUDE,
+        latitude,
+        longitude,
       };
 
       if (form.address.trim()) {
@@ -145,18 +160,6 @@ export function SupportRequestForm({
           </select>
         </Field>
 
-        <Field label="Address">
-          <input
-            maxLength={500}
-            value={form.address}
-            onChange={(event) =>
-              setForm({ ...form, address: event.target.value })
-            }
-            placeholder="Address where support is needed"
-            className={inputClassName}
-          />
-        </Field>
-
         <Field label="Detailed description" className="lg:col-span-2">
           <textarea
             required
@@ -173,6 +176,22 @@ export function SupportRequestForm({
             sensitive information.
           </p>
         </Field>
+
+        <div className="lg:col-span-2">
+          <LocationPicker
+            required
+            disabled={submitting}
+            label="Support location"
+            value={{
+              address: form.address,
+              latitude: form.latitude,
+              longitude: form.longitude,
+            }}
+            onChange={(location) =>
+              setForm((current) => ({ ...current, ...location }))
+            }
+          />
+        </div>
       </div>
 
       {error ? (

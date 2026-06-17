@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+
 import { SupportLocation } from "@/lib/admin-api";
 
 interface SupportLocationFormModalProps {
@@ -13,6 +14,9 @@ interface SupportLocationFormModalProps {
     isSubmitting: boolean;
 }
 
+const DEFAULT_LATITUDE = 10;
+const DEFAULT_LONGITUDE = 100;
+
 export function SupportLocationFormModal({
     isOpen,
     onClose,
@@ -24,44 +28,43 @@ export function SupportLocationFormModal({
     const [description, setDescription] = useState("");
     const [address, setAddress] = useState("");
     const [contactPhone, setContactPhone] = useState("");
-    const [latitude, setLatitude] = useState("");
-    const [longitude, setLongitude] = useState("");
     const [bankName, setBankName] = useState("");
     const [bankAccountNumber, setBankAccountNumber] = useState("");
 
     useEffect(() => {
-        if (initialData) {
-            setName(initialData.name || "");
-            setDescription(initialData.description || "");
-            setAddress(initialData.address || "");
-            setContactPhone(initialData.contactPhone || "");
-            setLatitude(initialData.latitude?.toString() || "");
-            setLongitude(initialData.longitude?.toString() || "");
-            setBankName(initialData.bankName || "");
-            setBankAccountNumber(initialData.bankAccountNumber || "");
-        } else {
-            setName("");
-            setDescription("");
-            setAddress("");
-            setContactPhone("");
-            setLatitude("");
-            setLongitude("");
-            setBankName("");
-            setBankAccountNumber("");
-        }
+        const timer = window.setTimeout(() => {
+            if (initialData) {
+                setName(initialData.name || "");
+                setDescription(initialData.description || "");
+                setAddress(initialData.address || "");
+                setContactPhone(initialData.contactPhone || "");
+                setBankName(initialData.bankName || "");
+                setBankAccountNumber(initialData.bankAccountNumber || "");
+            } else {
+                setName("");
+                setDescription("");
+                setAddress("");
+                setContactPhone("");
+                setBankName("");
+                setBankAccountNumber("");
+            }
+        }, 0);
+
+        return () => window.clearTimeout(timer);
     }, [initialData, isOpen]);
 
     if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
         await onSave({
             name: name.trim(),
             description: description.trim(),
             address: address.trim(),
             contactPhone: contactPhone.trim(),
-            latitude: parseFloat(latitude) || 0,
-            longitude: parseFloat(longitude) || 0,
+            latitude: DEFAULT_LATITUDE,
+            longitude: DEFAULT_LONGITUDE,
             bankName: bankName.trim() || null,
             bankAccountNumber: bankAccountNumber.trim() || null,
         });
@@ -69,7 +72,7 @@ export function SupportLocationFormModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-8">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-8">
                 <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
                     <h3 className="text-lg font-bold text-slate-900">
                         {initialData
@@ -145,7 +148,7 @@ export function SupportLocationFormModal({
 
                     <div className="space-y-4 pt-2">
                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-t pt-4">
-                            Address & Coordinates
+                            Address
                         </h4>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="col-span-2">
@@ -160,40 +163,6 @@ export function SupportLocationFormModal({
                                     disabled={isSubmitting}
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                     placeholder="123 Main St, City, Country"
-                                />
-                            </div>
-                            <div className="col-span-2 sm:col-span-1">
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Latitude *
-                                </label>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    required
-                                    value={latitude}
-                                    onChange={(e) =>
-                                        setLatitude(e.target.value)
-                                    }
-                                    disabled={isSubmitting}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                    placeholder="e.g. 10.7769"
-                                />
-                            </div>
-                            <div className="col-span-2 sm:col-span-1">
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Longitude *
-                                </label>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    required
-                                    value={longitude}
-                                    onChange={(e) =>
-                                        setLongitude(e.target.value)
-                                    }
-                                    disabled={isSubmitting}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                    placeholder="e.g. 106.7009"
                                 />
                             </div>
                         </div>

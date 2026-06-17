@@ -15,8 +15,6 @@ export type SupportRequestFormValue = {
   description: string;
   categoryId: string;
   address: string;
-  latitude: string;
-  longitude: string;
 };
 
 const emptyForm: SupportRequestFormValue = {
@@ -24,9 +22,10 @@ const emptyForm: SupportRequestFormValue = {
   description: "",
   categoryId: "",
   address: "",
-  latitude: "",
-  longitude: "",
 };
+
+const DEFAULT_LATITUDE = 10;
+const DEFAULT_LONGITUDE = 100;
 
 export function SupportRequestForm({
   initialValue = emptyForm,
@@ -43,7 +42,6 @@ export function SupportRequestForm({
   const [form, setForm] = useState(initialValue);
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-  const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,14 +82,6 @@ export function SupportRequestForm({
     event.preventDefault();
     setError(null);
 
-    const hasLatitude = form.latitude.trim() !== "";
-    const hasLongitude = form.longitude.trim() !== "";
-
-    if (hasLatitude !== hasLongitude) {
-      setError("Please provide both latitude and longitude.");
-      return;
-    }
-
     setSubmitting(true);
 
     try {
@@ -99,15 +89,12 @@ export function SupportRequestForm({
         title: form.title.trim(),
         description: form.description.trim(),
         categoryId: form.categoryId,
+        latitude: DEFAULT_LATITUDE,
+        longitude: DEFAULT_LONGITUDE,
       };
 
       if (form.address.trim()) {
         payload.address = form.address.trim();
-      }
-
-      if (hasLatitude && hasLongitude) {
-        payload.latitude = Number(form.latitude);
-        payload.longitude = Number(form.longitude);
       }
 
       await onSubmit(payload);
@@ -116,34 +103,6 @@ export function SupportRequestForm({
     } finally {
       setSubmitting(false);
     }
-  }
-
-  function useCurrentLocation() {
-    setError(null);
-
-    if (!navigator.geolocation) {
-      setError("Your browser does not support geolocation.");
-      return;
-    }
-
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setForm((current) => ({
-          ...current,
-          latitude: position.coords.latitude.toFixed(6),
-          longitude: position.coords.longitude.toFixed(6),
-        }));
-        setLocating(false);
-      },
-      () => {
-        setError(
-          "Unable to get your location. Allow location access or enter the coordinates manually.",
-        );
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10_000 },
-    );
   }
 
   return (
@@ -214,58 +173,6 @@ export function SupportRequestForm({
             sensitive information.
           </p>
         </Field>
-      </div>
-
-      <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">
-              Support location coordinates
-            </h3>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              Optional, but coordinates help coordinators identify the exact
-              location.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={useCurrentLocation}
-            disabled={locating}
-            className="h-9 shrink-0 rounded-lg border border-emerald-200 bg-white px-3 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-60"
-          >
-            {locating ? "Getting location..." : "Use current location"}
-          </button>
-        </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field label="Latitude">
-            <input
-              type="number"
-              step="any"
-              min={-90}
-              max={90}
-              value={form.latitude}
-              onChange={(event) =>
-                setForm({ ...form, latitude: event.target.value })
-              }
-              placeholder="10.776900"
-              className={inputClassName}
-            />
-          </Field>
-          <Field label="Longitude">
-            <input
-              type="number"
-              step="any"
-              min={-180}
-              max={180}
-              value={form.longitude}
-              onChange={(event) =>
-                setForm({ ...form, longitude: event.target.value })
-              }
-              placeholder="106.700900"
-              className={inputClassName}
-            />
-          </Field>
-        </div>
       </div>
 
       {error ? (

@@ -1,13 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import { InboxSidebar } from "@/components/chat/inbox-sidebar";
 import { ChatWindow } from "@/components/chat/chat-window";
 
-export function MessagesClient() {
+type MessagesClientProps = {
+    initialConversationId?: string | null;
+};
+
+export function MessagesClient({
+    initialConversationId = null,
+}: MessagesClientProps) {
+    const router = useRouter();
     const [activeConversationId, setActiveConversationId] = useState<
         string | null
-    >(null);
+    >(initialConversationId);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            setActiveConversationId(initialConversationId);
+        }, 0);
+
+        return () => window.clearTimeout(timer);
+    }, [initialConversationId]);
+
+    const handleSelectConversation = useCallback(
+        (id: string) => {
+            setActiveConversationId(id);
+            router.replace(`/messages?conversationId=${encodeURIComponent(id)}`, {
+                scroll: false,
+            });
+        },
+        [router],
+    );
+
+    const handleCloseConversation = useCallback(() => {
+        setActiveConversationId(null);
+        router.replace("/messages", { scroll: false });
+    }, [router]);
 
     return (
         <div className="flex h-[calc(100vh-100px)] bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -18,7 +50,7 @@ export function MessagesClient() {
             >
                 <InboxSidebar
                     activeId={activeConversationId}
-                    onSelect={(id) => setActiveConversationId(id)}
+                    onSelect={handleSelectConversation}
                 />
             </div>
 
@@ -30,7 +62,7 @@ export function MessagesClient() {
                 {activeConversationId ? (
                     <ChatWindow
                         conversationId={activeConversationId}
-                        onBack={() => setActiveConversationId(null)}
+                        onBack={handleCloseConversation}
                     />
                 ) : (
                     <div className="flex items-center justify-center h-full text-slate-400 flex-col gap-3">

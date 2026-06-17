@@ -50,8 +50,6 @@ export default function EditSupportRequestClient({
         description: request.description,
         categoryId: request.categoryId,
         address: request.address ?? "",
-        latitude: request.latitude?.toString() ?? "",
-        longitude: request.longitude?.toString() ?? "",
       });
     } catch (loadError) {
       setError(getErrorMessage(loadError));

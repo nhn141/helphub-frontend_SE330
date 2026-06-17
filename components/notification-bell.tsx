@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Client } from "@stomp/stompjs";
+import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -15,6 +16,7 @@ import {
 
 export function NotificationBell() {
     const { getAccessToken } = useAuth();
+    const router = useRouter();
     const [notifications, setNotifications] = useState<NotificationResponse[]>(
         [],
     );
@@ -173,6 +175,20 @@ export function NotificationBell() {
         [getAccessToken],
     );
 
+    const handleNotificationClick = useCallback(
+        async (notification: NotificationResponse) => {
+            const href = getNotificationHref(notification);
+
+            setIsOpen(false);
+            await handleMarkAsRead(notification);
+
+            if (href) {
+                router.push(href);
+            }
+        },
+        [handleMarkAsRead, router],
+    );
+
     // Mark all notifications as read
     const handleMarkAllAsRead = useCallback(async () => {
         if (unreadCount === 0) return;
@@ -264,58 +280,71 @@ export function NotificationBell() {
                                 </p>
                             </div>
                         ) : (
-                            notifications.map((notification) => (
-                                <button
-                                    key={notification.id}
-                                    type="button"
-                                    onClick={() =>
-                                        handleMarkAsRead(notification)
-                                    }
-                                    className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50 ${
-                                        !notification.isRead
-                                            ? "bg-emerald-50/40"
-                                            : ""
-                                    }`}
-                                >
-                                    {/* Icon */}
-                                    <div
-                                        className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full ${
+                            notifications.map((notification) => {
+                                const href = getNotificationHref(notification);
+
+                                return (
+                                    <button
+                                        key={notification.id}
+                                        type="button"
+                                        onClick={() =>
+                                            handleNotificationClick(
+                                                notification,
+                                            )
+                                        }
+                                        aria-label={
+                                            href
+                                                ? `Open notification: ${notification.content}`
+                                                : `Mark notification as read: ${notification.content}`
+                                        }
+                                        className={`group flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset ${
                                             !notification.isRead
-                                                ? "bg-emerald-100 text-emerald-700"
-                                                : "bg-slate-100 text-slate-400"
+                                                ? "bg-emerald-50/40"
+                                                : ""
                                         }`}
                                     >
-                                        <NotifItemIcon
-                                            referenceType={
-                                                notification.referenceType
-                                            }
-                                        />
-                                    </div>
-
-                                    {/* Content */}
-                                    <div className="min-w-0 flex-1">
-                                        <p
-                                            className={`text-sm leading-snug ${
+                                        {/* Icon */}
+                                        <div
+                                            className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full ${
                                                 !notification.isRead
-                                                    ? "font-medium text-slate-900"
-                                                    : "text-slate-600"
+                                                    ? "bg-emerald-100 text-emerald-700"
+                                                    : "bg-slate-100 text-slate-400"
                                             }`}
                                         >
-                                            {notification.content}
-                                        </p>
-                                        <p className="mt-0.5 text-xs text-slate-400">
-                                            {formatTimeAgo(
-                                                notification.createdAt,
-                                            )}
-                                        </p>
-                                    </div>
+                                            <NotifItemIcon
+                                                referenceType={
+                                                    notification.referenceType
+                                                }
+                                            />
+                                        </div>
 
-                                    {/* Unread dot */}
-                                    {!notification.isRead && (
-                                        <span className="mt-2 size-2 shrink-0 rounded-full bg-rose-500" />
-                                    )}
-                                </button>
-                            ))
+                                        {/* Content */}
+                                        <div className="min-w-0 flex-1">
+                                            <p
+                                                className={`text-sm leading-snug ${
+                                                    !notification.isRead
+                                                        ? "font-medium text-slate-900"
+                                                        : "text-slate-600"
+                                                }`}
+                                            >
+                                                {notification.content}
+                                            </p>
+                                            <p className="mt-0.5 text-xs text-slate-400">
+                                                {formatTimeAgo(
+                                                    notification.createdAt,
+                                                )}
+                                            </p>
+                                        </div>
+
+                                        <span className="mt-1 flex shrink-0 items-center gap-2">
+                                            {!notification.isRead && (
+                                                <span className="size-2 rounded-full bg-rose-500" />
+                                            )}
+                                            {href ? <OpenIcon /> : null}
+                                        </span>
+                                    </button>
+                                );
+                            })
                         )}
                     </div>
 
@@ -346,6 +375,153 @@ export function NotificationBell() {
             `}</style>
         </div>
     );
+}
+
+function getNotificationHref(
+    notification: NotificationResponse,
+): string | null {
+    const actionHref = getHrefFromActionUrl(notification.actionUrl);
+
+    if (actionHref) {
+        return actionHref;
+    }
+
+    switch (notification.referenceType) {
+        case "SUPPORT_REQUEST":
+        case "VOLUNTEER_ASSIGNMENT":
+        case "SUPPORT_NEED":
+        case "CONTRIBUTION":
+            return notification.referenceId
+                ? `/support-requests/${encodePathSegment(notification.referenceId)}`
+                : "/support-requests";
+        case "MESSAGE":
+        case "CONVERSATION":
+            return "/messages";
+        case "REPORT":
+            return "/admin/reports";
+        case "USER":
+            return "/admin/users";
+        case "POST":
+            return "/social";
+        default:
+            return null;
+    }
+}
+
+function getHrefFromActionUrl(actionUrl: string | null): string | null {
+    const path = normalizeActionPath(actionUrl);
+
+    if (!path) {
+        return null;
+    }
+
+    const conversationId = getFirstMatch(path, [
+        /^\/conversations\/([^/?#]+)/,
+        /^\/api\/v1\/conversations\/([^/?#]+)/,
+    ]);
+
+    if (conversationId) {
+        return `/messages?conversationId=${encodePathSegment(conversationId)}`;
+    }
+
+    const supportRequestId = getFirstMatch(path, [
+        /^\/support-requests\/([^/?#]+)/,
+        /^\/api\/v1\/support-requests\/([^/?#]+)/,
+    ]);
+
+    if (supportRequestId) {
+        return `/support-requests/${encodePathSegment(supportRequestId)}`;
+    }
+
+    const reportId = getFirstMatch(path, [
+        /^\/reports\/([^/?#]+)/,
+        /^\/api\/reports\/([^/?#]+)/,
+        /^\/api\/v1\/reports\/([^/?#]+)/,
+    ]);
+
+    if (reportId) {
+        return `/admin/reports?reportId=${encodePathSegment(reportId)}`;
+    }
+
+    const userId = getFirstMatch(path, [
+        /^\/users\/([^/?#]+)/,
+        /^\/api\/v1\/users\/([^/?#]+)/,
+    ]);
+
+    if (userId) {
+        return `/admin/users?userId=${encodePathSegment(userId)}`;
+    }
+
+    const postId = getFirstMatch(path, [
+        /^\/posts\/([^/?#]+)/,
+        /^\/api\/v1\/posts\/([^/?#]+)/,
+    ]);
+
+    if (postId) {
+        return `/social?postId=${encodePathSegment(postId)}`;
+    }
+
+    return getSupportedInternalHref(path);
+}
+
+function normalizeActionPath(actionUrl: string | null): string | null {
+    if (!actionUrl?.trim()) {
+        return null;
+    }
+
+    try {
+        const baseUrl =
+            typeof window === "undefined"
+                ? "http://helphub.local"
+                : window.location.origin;
+        const parsed = new URL(actionUrl, baseUrl);
+        return `${parsed.pathname}${parsed.search}`;
+    } catch {
+        return actionUrl.startsWith("/") ? actionUrl : `/${actionUrl}`;
+    }
+}
+
+function getFirstMatch(path: string, patterns: RegExp[]): string | null {
+    for (const pattern of patterns) {
+        const match = path.match(pattern);
+
+        if (match?.[1]) {
+            return match[1];
+        }
+    }
+
+    return null;
+}
+
+function getSupportedInternalHref(path: string): string | null {
+    const supportedPaths = [
+        "/dashboard",
+        "/support-requests",
+        "/messages",
+        "/social",
+        "/admin/dashboard",
+        "/admin/users",
+        "/admin/support-requests",
+        "/admin/reports",
+        "/admin/categories",
+        "/admin/support-locations",
+        "/admin/role-upgrades",
+    ];
+
+    return supportedPaths.some(
+        (supportedPath) =>
+            path === supportedPath || path.startsWith(`${supportedPath}?`),
+    )
+        ? path
+        : null;
+}
+
+function encodePathSegment(value: string): string {
+    try {
+        return encodeURIComponent(decodeURIComponent(value));
+    } catch {
+        return encodeURIComponent(value);
+    }
 }
 
 // ── Icons ────────────────────────────────────────────────────────────
@@ -382,6 +558,23 @@ function BellOffIcon() {
         >
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+    );
+}
+
+function OpenIcon() {
+    return (
+        <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="size-4 shrink-0 text-slate-300 transition group-hover:text-emerald-600"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M9 18l6-6-6-6" />
         </svg>
     );
 }
